@@ -315,7 +315,6 @@ input[type='range']::-moz-range-thumb {
 }
 
 .dynamic-hero-layout .hero-image-col {
-  display: block !important;
   height: 100%;
 }
 

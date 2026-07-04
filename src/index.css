@@ -777,13 +777,20 @@ header.sticky {
   position: relative;
   z-index: 1;
   transform-origin: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f6f0;
+  border-radius: 12px;
+  overflow: hidden;        /* clips anything outside this box */
 }
-.preloader-logo { mix-blend-mode: screen; }
+
 .preloader-logo {
   width: var(--loader-logo-size, clamp(145px, 28vw, 230px));
   height: auto;
   display: block;
-  mix-blend-mode: screen;      /* kills a black video bg against the white loader bg */
+  transform: scale(1.05) translateX(2%);  /* nudges the video to hide the left-edge line */
+  mix-blend-mode: normal;
   opacity: 0;
   transition: opacity 0.35s ease;
 }
@@ -801,105 +808,11 @@ header.sticky {
   animation: preloaderReveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.preloader-mark::before,
-.preloader-mark::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.preloader-mark::before {
-  inset: 10%;
-  border: 1px solid rgba(201, 149, 42, 0.34);
-  box-shadow:
-    0 0 0 18px rgba(201, 149, 42, 0.04),
-    inset 0 0 38px rgba(201, 149, 42, 0.08);
-  animation: preloaderBreathe 1.35s ease-in-out infinite;
-}
-
-.preloader-mark::after {
-  inset: 3%;
-  background:
-    conic-gradient(from 0deg, transparent 0 18%, rgba(200, 16, 46, 0.7) 24%, transparent 34% 56%, rgba(201, 149, 42, 0.75) 64%, transparent 72% 100%);
-  mask: radial-gradient(circle, transparent 62%, #000 63%, #000 68%, transparent 69%);
-  -webkit-mask: radial-gradient(circle, transparent 62%, #000 63%, #000 68%, transparent 69%);
-  animation: preloaderRingSweep 1.2s linear infinite;
-}
-/* add right after the existing .preloader-mark::before / ::after rules */
-.preloader-mark::before,
-.preloader-mark::after {
-  visibility: hidden;
-  animation-play-state: paused;
-}
-.preloader-mark.is-ready::before,
-.preloader-mark.is-ready::after {
-  visibility: visible;
-  animation-play-state: running;
-}
-
-.preloader-orbit {
-  visibility: hidden;
-  animation-play-state: paused;
-}
-.preloader-mark.is-ready .preloader-orbit {
-  visibility: visible;
-  animation-play-state: running;
-}
-.preloader-orbit {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1px dashed rgba(200, 16, 46, 0.24);
-  animation: preloaderOrbit 1.4s linear infinite;
-}
-
-.preloader-orbit::before {
-  content: "";
-  position: absolute;
-  top: 8%;
-  left: 50%;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #C9952A;
-  box-shadow: 0 0 0 6px rgba(201, 149, 42, 0.12), 0 0 22px rgba(201, 149, 42, 0.72);
-  transform: translateX(-50%);
-}
+/* preloader-mark::before/::after and .preloader-orbit removed entirely — that was the ring/dot loader */
 
 @keyframes preloaderReveal {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes preloaderLogoSettle {
-  0% { opacity: 0; transform: translateY(10px) scale(0.98); filter: blur(3px); }
-  60% { opacity: 1; filter: blur(0); }
-  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-}
-
-@keyframes preloaderLogoFloat {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-6px) scale(1.015); }
-}
-
-@keyframes preloaderOrbit {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes preloaderRingSweep {
-  to { transform: rotate(-360deg); }
-}
-
-@keyframes preloaderBreathe {
-  0%, 100% { transform: scale(0.92); opacity: 0.46; }
-  50% { transform: scale(1.08); opacity: 1; }
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .preloader-progress {
@@ -926,9 +839,9 @@ header.sticky {
 
 @media (prefers-reduced-motion: reduce) {
   .preloader-mark,
-  .preloader-mark::before,
-  .preloader-orbit,
   .preloader-logo-wrap,
   .preloader-progress,
   .preloader-progress span { animation: none; }
 }
+
+

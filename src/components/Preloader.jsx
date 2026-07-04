@@ -10,12 +10,11 @@ const loaderSizes = {
 
 export function LogoLoader({ size = 'md', label = 'Loading...', className = '' }) {
   const dims = loaderSizes[size] || loaderSizes.md;
-  const [loaded, setLoaded] = useState(false);   // NEW
+  const [loaded, setLoaded] = useState(false);
 
   return (
     <div className={`flex flex-col items-center justify-center ${className}`}>
-      <div className="preloader-mark" aria-label={label} style={{ /* unchanged */ }}>
-        <div className="preloader-orbit" />
+      <div className="preloader-mark" aria-label={label}>
         <div className="preloader-logo-wrap">
           <video
             className={`preloader-logo ${loaded ? 'is-loaded' : ''}`}
@@ -25,7 +24,7 @@ export function LogoLoader({ size = 'md', label = 'Loading...', className = '' }
             muted
             playsInline
             preload="auto"
-            onLoadedData={() => setLoaded(true)}   // NEW — only fade in once it can actually play
+            onLoadedData={() => setLoaded(true)}
             style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
           />
         </div>
@@ -37,7 +36,6 @@ export function LogoLoader({ size = 'md', label = 'Loading...', className = '' }
       >
         <span />
       </div>
-
       {label && (
         <p className="font-body text-xs text-gray-400 mt-3 animate-pulse">{label}</p>
       )}
@@ -50,14 +48,13 @@ export default function Preloader({ onDone }) {
   const doneRef = useRef(false);
 
   useEffect(() => {
-    const hideTimer = setTimeout(() => setHiding(true), 2200);
+    const hideTimer = setTimeout(() => setHiding(true), 8200);
     const doneTimer = setTimeout(() => {
       if (!doneRef.current) {
         doneRef.current = true;
         onDone();
       }
-    }, 3000);
-
+    }, 8200);
     return () => {
       clearTimeout(hideTimer);
       clearTimeout(doneTimer);
@@ -78,7 +75,7 @@ export default function Preloader({ onDone }) {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#f8f6f0',   /* was #ffffff — now matches the video bg */
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

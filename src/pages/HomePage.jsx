@@ -827,7 +827,7 @@ function Testimonials() {
     { name: 'Priya S.', city: 'Chennai', text: 'Best Kanjivaram sarees I have bought online. Quality matches exactly what is shown. Fast delivery too!' },
     { name: 'Kavitha R.', city: 'Coimbatore', text: 'Bought a Dharmavaram for my sister’s wedding. The zari work is breathtaking. Will definitely shop again!' },
     { name: 'Anitha M.', city: 'Madurai', text: 'Excellent collection and very good customer service. The live shows are super helpful for choosing designs.' },
-    { name: 'Sundari K.', city: 'Salem', text: 'Love Dillo! Local brand with national quality. The cost-to-cost sale prices are unbeatable.' },
+    { name: 'Sundari K.', city: 'Natham', text: 'Love Dillo! Local brand with national quality. The cost-to-cost sale prices are unbeatable.' },
   ];
 
   return (

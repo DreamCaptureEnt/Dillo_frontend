@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import DilloLogo from '../assets/Logo.png';
+import DilloVideo from '../assets/Dillo_v02.mp4';
 
 const loaderSizes = {
   sm: { mark: 86, logo: 66, progress: 84 },
@@ -10,22 +10,26 @@ const loaderSizes = {
 
 export function LogoLoader({ size = 'md', label = 'Loading...', className = '' }) {
   const dims = loaderSizes[size] || loaderSizes.md;
+  const [loaded, setLoaded] = useState(false);   // NEW
+
   return (
     <div className={`flex flex-col items-center justify-center ${className}`}>
-      <div
-        className="preloader-mark"
-        aria-label={label}
-        style={{
-          '--loader-mark-size': `${dims.mark}px`,
-          '--loader-logo-size': `${dims.logo}px`,
-        }}
-      >
+      <div className="preloader-mark" aria-label={label} style={{ /* unchanged */ }}>
         <div className="preloader-orbit" />
         <div className="preloader-logo-wrap">
-          <img src={DilloLogo} alt="Dillo" className="preloader-logo" />
+          <video
+            className={`preloader-logo ${loaded ? 'is-loaded' : ''}`}
+            src={DilloVideo}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            onLoadedData={() => setLoaded(true)}   // NEW — only fade in once it can actually play
+            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+          />
         </div>
       </div>
-
       <div
         className="preloader-progress"
         aria-hidden="true"

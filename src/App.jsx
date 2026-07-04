@@ -17,6 +17,11 @@ import CheckoutPage from "./pages/CheckoutPage";
 import AccountPage from "./pages/AccountPage";
 import VideoShoppingPage from "./pages/VideoShoppingPage";
 
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsPage from "./pages/TermsPage";
+import CancellationRefundPage from "./pages/CancellationRefundPage";
+import ShippingPolicyPage from "./pages/ShippingPolicyPage";
+
 import "./index.css";
 
 const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
@@ -69,10 +74,17 @@ function App() {
 
           <Route path="/new-arrivals" element={<NewArrivalsPage />} />
           <Route path="/live-show" element={<LiveShowPage />} />
-          <Route path="/cost-to-cost" element={<CostToCostPage />} />
+          {/* <Route path="/cost-to-cost" element={<CostToCostPage />} /> */}
           <Route path="/about" element={<AboutPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/video-shopping" element={<VideoShoppingPage />} />
+
+          {/* Policy pages — required for Razorpay verification */}
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-and-conditions" element={<TermsPage />} />
+          <Route path="/cancellation-refund" element={<CancellationRefundPage />} />
+          <Route path="/shipping-delivery" element={<ShippingPolicyPage />} />
+
           <Route path="/admin/login" element={
             <Suspense fallback={<LogoLoader size="md" label="Loading admin..." className="min-h-[45vh]" />}>
               <AdminLoginPage />

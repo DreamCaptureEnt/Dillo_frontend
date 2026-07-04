@@ -8,7 +8,7 @@ import {
 const values = [
   { icon: Heart, title: 'Weaver First', desc: 'We partner directly with master weavers, ensuring fair wages and preserving traditional crafts.', color: 'text-dillo-red' },
   { icon: Shield, title: 'Authenticity', desc: 'Every saree is certified authentic — we test silk purity and verify zari quality before listing.', color: 'text-dillo-gold' },
-  { icon: Truck, title: 'Salem to Your Door', desc: 'From our store in Salem to your doorstep, we deliver carefully packaged with love.', color: 'text-blue-600' },
+  { icon: Truck, title: 'Natham to Your Door', desc: 'From our store in Natham to your doorstep, we deliver carefully packaged with love.', color: 'text-blue-600' },
   { icon: Award, title: 'Trusted Since 1998', desc: 'Over 25 years of serving Tamil Nadu families with premium ethnic wear at honest prices.', color: 'text-green-600' },
 ];
 
@@ -19,9 +19,9 @@ const team = [
 ];
 
 const milestones = [
-  { year: '1998', title: 'Founded in Salem', desc: 'A small shop in Saradha Complex, Salem with 50 sarees and a big dream.' },
+  { year: '1998', title: 'Founded in Natham', desc: 'A small shop in Saradha Complex, Natham with 50 sarees and a big dream.' },
   { year: '2005', title: 'Direct Weaver Network', desc: 'Established partnerships with 40+ weaving families in Kanchipuram and Dharmavaram.' },
-  { year: '2014', title: '10,000 Customers', desc: 'Crossed a major milestone serving families across Salem, Coimbatore and Chennai.' },
+  { year: '2014', title: '10,000 Customers', desc: 'Crossed a major milestone serving families across Natham, Coimbatore and Chennai.' },
   { year: '2020', title: 'Online & Live Shows', desc: 'Launched YouTube live saree shows during the pandemic — a game changer for reach.' },
   { year: '2024', title: 'Dillo.in Launches', desc: 'Our full e-commerce platform goes live, making authentic sarees accessible nationwide.' },
   { year: '2026', title: '25K+ Happy Families', desc: 'Now serving customers across India with 200+ curated silk and handloom collections.' },
@@ -59,7 +59,7 @@ export default function AboutPage() {
             </h1>
             <p className="font-body text-white/50 text-lg mb-3 tracking-wider">நமது கதை</p>
             <p className="font-body text-white/75 text-lg leading-relaxed mb-8">
-              For over 25 years, Dillo has been Salem's most trusted name for authentic silk sarees, handloom fabrics, and readymade ethnic wear — connecting the artistry of master weavers directly to your wardrobe.
+              For over 25 years, Dillo has been Natham's most trusted name for authentic silk sarees, handloom fabrics, and readymade ethnic wear — connecting the artistry of master weavers directly to your wardrobe.
             </p>
             <div className="flex gap-4">
               <Link to="/products" className="btn-primary flex items-center gap-2">
@@ -110,7 +110,7 @@ export default function AboutPage() {
             </div>
             <div className="absolute -bottom-6 -right-6 bg-dillo-red p-5 hidden md:block">
               <div className="font-display text-white text-2xl font-bold">1998</div>
-              <div className="font-body text-white/80 text-xs">Founded in Salem</div>
+              <div className="font-body text-white/80 text-xs">Founded in Natham</div>
             </div>
           </div>
           <div>
@@ -218,7 +218,7 @@ export default function AboutPage() {
                   <p className="font-body text-white font-semibold">Dillo Sarees</p>
                   <p className="font-body text-white/70 text-sm mt-1 leading-relaxed">
                     12, Saradha Complex, Omalur Road,<br />
-                    Salem – 636 004, Tamil Nadu
+                    Natham – 636 004, Tamil Nadu
                   </p>
                 </div>
               </div>

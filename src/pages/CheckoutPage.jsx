@@ -50,7 +50,7 @@ export default function CheckoutPage() {
   const [couponInput, setCouponInput] = useState('');
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '',
-    address: '', city: 'Salem', state: 'Tamil Nadu', pincode: '', landmark: '',
+    address: '', city: 'Natham', state: 'Tamil Nadu', pincode: '', landmark: '',
   });
 
   const handleFormChange = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -216,7 +216,7 @@ export default function CheckoutPage() {
                 <div>
                   <label className="font-body text-sm text-gray-600 mb-1.5 block">City *</label>
                   <input name="city" value={form.city} onChange={handleFormChange}
-                    placeholder="Salem" className="input-field" />
+                    placeholder="Natham" className="input-field" />
                 </div>
                 <div>
                   <label className="font-body text-sm text-gray-600 mb-1.5 block">State *</label>

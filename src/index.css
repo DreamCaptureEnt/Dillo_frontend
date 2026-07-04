@@ -776,16 +776,19 @@ header.sticky {
 .preloader-logo-wrap {
   position: relative;
   z-index: 1;
-  animation:
-    preloaderLogoSettle 0.85s cubic-bezier(0.22, 1, 0.36, 1) both,
-    preloaderLogoFloat 1.8s ease-in-out 0.85s infinite;
   transform-origin: center;
 }
-
+.preloader-logo { mix-blend-mode: screen; }
 .preloader-logo {
   width: var(--loader-logo-size, clamp(145px, 28vw, 230px));
   height: auto;
   display: block;
+  mix-blend-mode: screen;      /* kills a black video bg against the white loader bg */
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.preloader-logo.is-loaded {
+  opacity: 1;
 }
 
 .preloader-mark {
@@ -823,7 +826,26 @@ header.sticky {
   -webkit-mask: radial-gradient(circle, transparent 62%, #000 63%, #000 68%, transparent 69%);
   animation: preloaderRingSweep 1.2s linear infinite;
 }
+/* add right after the existing .preloader-mark::before / ::after rules */
+.preloader-mark::before,
+.preloader-mark::after {
+  visibility: hidden;
+  animation-play-state: paused;
+}
+.preloader-mark.is-ready::before,
+.preloader-mark.is-ready::after {
+  visibility: visible;
+  animation-play-state: running;
+}
 
+.preloader-orbit {
+  visibility: hidden;
+  animation-play-state: paused;
+}
+.preloader-mark.is-ready .preloader-orbit {
+  visibility: visible;
+  animation-play-state: running;
+}
 .preloader-orbit {
   position: absolute;
   inset: 0;

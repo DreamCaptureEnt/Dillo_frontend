@@ -41,7 +41,7 @@ export default function Footer() {
             className="h-10 w-auto object-contain"
           />
           <p className="font-body text-sm text-white/80 mt-4 leading-relaxed">
-            Salem's premier destination for authentic silk sarees, handloom fabrics, 
+            Natham's premier destination for authentic silk sarees, handloom fabrics, 
             and readymade ethnic wear. Directly from weavers to your wardrobe.
           </p>
           <div className="flex gap-4 mt-6">
@@ -70,7 +70,7 @@ export default function Footer() {
               { label: 'Sarees', href: '/products?category=sarees' },
               { label: 'New Arrivals', href: '/new-arrivals' },
               { label: 'Live Show', href: '/live-show' },
-              { label: 'Cost to Cost Sale', href: '/cost-to-cost' },
+              // { label: 'Cost to Cost Sale', href: '/cost-to-cost' },
               { label: 'Readymade', href: '/products?category=readymade' },
               { label: 'About Us', href: '/about' },
             ].map(link => (
@@ -94,12 +94,10 @@ export default function Footer() {
           </h4>
           <ul className="space-y-3">
             {[
-              { label: 'My Orders', href: '/account/orders' },
-              { label: 'Return & Exchange', href: '/returns' },
-              { label: 'Shipping Policy', href: '/shipping' },
-              { label: 'Size Guide', href: '/size-guide' },
-              { label: 'FAQ', href: '/faq' },
-              { label: 'Track Order', href: '/track-order' },
+              { label: 'Cancellation & Refund', href: '/cancellation-refund' },
+              { label: 'Shipping & Delivery', href: '/shipping-delivery' },
+              { label: 'Terms & Conditions', href: '/terms-and-conditions' },
+              { label: 'Privacy Policy', href: '/privacy-policy' },
             ].map(link => (
               <li key={link.label}>
                 <Link
@@ -157,9 +155,13 @@ export default function Footer() {
             © 2026 Dillo Textiles Pvt. Ltd. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            {['Privacy Policy', 'Terms of Use', 'Refund Policy'].map(l => (
-              <Link key={l} to="#" className="font-body text-xs text-white/70 hover:text-white transition-colors">
-                {l}
+            {[
+              { label: 'Privacy Policy', href: '/privacy-policy' },
+              { label: 'Terms & Conditions', href: '/terms-and-conditions' },
+              { label: 'Refund Policy', href: '/cancellation-refund' },
+            ].map(l => (
+              <Link key={l.label} to={l.href} className="font-body text-xs text-white/70 hover:text-white transition-colors">
+                {l.label}
               </Link>
             ))}
           </div>

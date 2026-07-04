@@ -13,31 +13,29 @@ import { apiFetch } from '../api';
   Logo dimensions: 562 × 444 px  →  aspect ratio ≈ 1.266 (landscape-ish square)
   Strategy: fix HEIGHT per breakpoint, let width auto-scale via object-contain.
 
-  LAYOUT FIX (this version): TWO STACKED ROWS on desktop, not one row.
+  LAYOUT: TWO STACKED ROWS on desktop, not one row.
 
-  Why the single-row 3-col grid still overlapped:
-  `grid-cols-[1fr_auto_1fr]` correctly centers the logo column — that part
-  was fixed. But this nav has 6 items, several multi-word ("Cost to Cost
-  Sale", "Video Shopping"), all forced into a single `nowrap` line sharing
-  ONE ROW with the centered logo. At real-world desktop widths, the nav's
-  natural width is wider than its 1fr track, so it overflows past its own
-  column boundary and runs straight under the logo. The columns were never
-  the bug — there just wasn't enough horizontal room left over once a
-  logo (with its banner) also needs a centered slot in that same row.
+    Row 1 (h-16 xl:h-20 2xl:h-24): logo only, perfectly centered, full breathing room
+    Row 2 (h-12, xl+ only): nav (truly centered) + icons (right-aligned), own row
 
-  The actual fix: stop asking one row to hold both a 6-item nav AND a
-  centered logo AND 4 icons. Split into two rows, full width each:
+  ROW 2 CENTERING FIX (this version):
+  Previously Row 2 was `flex justify-between` with the nav as
+  `flex-1 justify-center` and the icon cluster as `flex-shrink-0`.
+  That centers the nav *inside the leftover space after the icons*,
+  not inside the row as a whole — so on real screens the nav visibly
+  drifts left, since the icon cluster on the right (~180px) has no
+  mirrored space on the left to balance it.
 
-    Row 1 (h-20 xl:h-24): logo only, perfectly centered, full breathing room
-    Row 2 (h-14 xl:h-12): nav (centered) + icons (right-aligned), own row
-
-  This is the same pattern used by most full-catalog Indian retail sites
-  (logo banner row on top, nav below) — it isn't a style preference here,
-  it's the only way to guarantee zero overlap at any screen width without
-  constantly re-tuning padding per breakpoint.
+  Fix: use the same trick as the logo row — a 3-column grid
+  `[1fr_auto_1fr]` with an empty first column, the nav in the middle
+  column (auto width, centered), and the icon cluster in the last
+  column (right-aligned). Because the two flanking columns are true
+  grid tracks (1fr each), the middle column is mathematically centered
+  in the row regardless of how wide the icon cluster is — the same
+  guarantee the logo row already relies on.
 
   Header total heights:
-    mobile  → logo row h-16 + (no separate nav row; nav lives in drawer)
+    mobile  → logo row h-16 (no separate nav row; nav lives in drawer)
     xl+     → logo row h-20 xl:h-24  +  nav row h-12
 */
 
@@ -203,12 +201,12 @@ export default function Header() {
         },
       ],
     },
-    {
-      label: 'Cost to Cost Sale',
-      labelTa: 'விலை குறைப்பு',
-      href: '/cost-to-cost',
-      highlight: true,
-    },
+    // {
+    //   label: 'Cost to Cost Sale',
+    //   labelTa: 'விலை குறைப்பு',
+    //   href: '/cost-to-cost',
+    //   highlight: true,
+    // },
     {
       label: 'About Us',
       labelTa: 'எங்களைப் பற்றி',
@@ -270,7 +268,7 @@ export default function Header() {
           border-b border-gray-100`}
         onMouseLeave={() => setActiveMenu(null)}
       >
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 relative">
 
           {/* ════════════════════════════════════════════════
               ROW 1 — LOGO ONLY, full width, perfectly centered.
@@ -280,21 +278,11 @@ export default function Header() {
                               nothing else shares this row.
 
               Original logo: 562 × 444 px (ratio 1.266 : 1).
-              This row's only job is to give the logo (and its banner,
-              if present) real vertical and horizontal breathing room —
-              it no longer has to fight a 6-item nav for the same line.
 
-              MOBILE CENTERING FIX:
-              Previously both side columns were `auto`-width. The left
-              column held an empty div (auto → 0px), the right column
-              held search+hamburger (auto → ~84px). A 0px vs ~84px
-              mismatch meant the middle "centered" column was actually
-              centered between unequal gaps, dragging the logo visibly
-              left — exactly what showed up on a real phone screen.
-              Fix: force both side columns to the SAME fixed width
-              (w-20, matching the icon cluster's real footprint) so the
-              middle column is centered between two truly equal gaps,
-              regardless of what each side contains.
+              MOBILE CENTERING FIX (kept from previous pass):
+              Both side columns are forced to the SAME fixed width
+              (5rem) so the middle "centered" column is centered between
+              two truly equal gaps, regardless of what each side contains.
               ════════════════════════════════════════════════ */}
           <div className="grid grid-cols-[5rem_1fr_5rem] xl:grid-cols-3 items-center h-16 xl:h-20 2xl:h-24">
 
@@ -355,14 +343,25 @@ export default function Header() {
           </div>
 
           {/* ════════════════════════════════════════════════
-              ROW 2 (desktop only) — NAV (centered) + ICONS (right)
-              This row gets the FULL width to itself now, so all 6 nav
-              items — including multi-word ones — have genuine room to
-              breathe without ever needing to share space with the logo.
-              ════════════════════════════════════════════════ */}
-          <div className="hidden xl:flex items-center justify-between h-12 border-t border-gray-100">
+              ROW 2 (desktop only) — NAV (truly centered) + ICONS (right)
 
-            <nav className="flex items-center gap-0.5 min-w-0 flex-1 justify-center">
+              3-column grid `[1fr_auto_1fr]`:
+                col 1 → empty spacer (grows/shrinks with viewport)
+                col 2 → nav, auto-width, centered by grid math
+                col 3 → icon cluster, right-aligned in its own track
+
+              Because col 1 and col 3 are both `1fr`, the nav in the
+              middle is centered relative to the FULL row width — not
+              relative to whatever space the icons happen to leave —
+              so it no longer drifts left as the icon cluster's width
+              changes (e.g. wishlist/cart badges appearing).
+              ════════════════════════════════════════════════ */}
+          <div className="hidden xl:grid grid-cols-[1fr_auto_1fr] items-center h-12 border-t border-gray-100">
+
+            {/* left spacer — balances the icon cluster so col 2 is truly centered */}
+            <div aria-hidden="true" />
+
+            <nav className="flex items-center justify-center gap-0.5 justify-self-center">
               {navItems.map((item) => (
                 <div
                   key={item.label}
@@ -394,7 +393,7 @@ export default function Header() {
               ))}
             </nav>
 
-            <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="flex items-center gap-1.5 justify-self-end">
               <button onClick={() => setSearchOpen(!searchOpen)}
                 className="p-2 hover:text-dillo-red transition-colors text-dillo-charcoal"
                 aria-label="Search">
@@ -462,44 +461,96 @@ export default function Header() {
             </div>
           )}
 
-          {activeDesktopItem?.submenu && (
-            <div
-              className="hidden xl:block absolute top-full left-1/2 -translate-x-1/2
-                w-[min(880px,calc(100vw-3rem))] bg-white shadow-2xl border-t-2
-                border-dillo-red animate-mega-menu z-[110]"
-              onMouseEnter={() => setActiveMenu(activeDesktopItem.label)}
-            >
-              <div className="grid grid-cols-2 2xl:grid-cols-4 gap-6 p-6">
-                {activeDesktopItem.submenu.map((group) => (
-                  <div key={group.heading} className="min-w-0">
-                    <p className="text-xs font-cinzel font-semibold tracking-widest
-                      text-dillo-gold uppercase mb-3 pb-2 border-b border-gray-100">
-                      {group.heading}
-                    </p>
-                    <ul className="space-y-2">
-                      {group.links.map((link) => (
-                        <li key={link.label}>
-                          <Link to={link.href}
-                            className="group/link flex items-center gap-2 text-sm font-body
-                              text-dillo-charcoal hover:text-dillo-red transition-colors duration-150">
-                            {link.icon && <span>{link.icon}</span>}
-                            <span className="transition-transform duration-200 group-hover/link:translate-x-1">
-                              {link.label}
-                            </span>
-                            {link.badge && (
-                              <span className="text-[10px] bg-dillo-red text-white px-1.5 py-0.5 font-bold">
-                                {link.badge}
-                              </span>
-                            )}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+          {activeDesktopItem?.submenu && (() => {
+            /* Width & column count both derive from how many groups this
+               particular item actually has (1 for "Youtube/ insta", 4 for
+               "Sarees") instead of a single fixed size for every menu —
+               that's what made a 1-group menu look like an oversized,
+               half-empty box. Capped at 4 columns / ~640px so it never
+               sprawls even on very wide desktops. */
+            const groupCount = Math.min(activeDesktopItem.submenu.length, 4);
+            const colWidth = 168; // px per column, compact but readable
+            const menuWidth = groupCount * colWidth + (groupCount - 1) * 24 + 32; // cols + gaps + padding
+
+            return (
+              <div
+                className="hidden xl:block absolute top-full left-1/2 -translate-x-1/2 mt-1.5
+                  bg-white rounded-xl shadow-lg shadow-dillo-charcoal/10 border border-gray-100
+                  ring-1 ring-black/[0.03] animate-mega-menu z-[110] overflow-hidden"
+                style={{ width: `min(${menuWidth}px, calc(100vw - 2rem))` }}
+                onMouseEnter={() => setActiveMenu(activeDesktopItem.label)}
+              >
+                <div className="h-[3px] bg-dillo-red" />
+                <div
+                  className="grid gap-x-6 gap-y-4 p-4"
+                  style={{ gridTemplateColumns: `repeat(${groupCount}, minmax(0, 1fr))` }}
+                >
+                  {activeDesktopItem.submenu.map((group) => (
+                    <div key={group.heading} className="min-w-0">
+                      <p className="text-[10.5px] font-cinzel font-semibold tracking-wider
+                        text-dillo-gold uppercase mb-1.5 pb-1.5 border-b border-gray-100">
+                        {group.heading}
+                      </p>
+                      {/*
+                        SCROLLBAR FIX:
+                        The site's global scrollbar CSS (thick, brand-red
+                        thumb — meant for the main page scroll) was being
+                        inherited by this inner list the moment it
+                        overflowed, so a column with a few extra links
+                        would sprout a scrollbar almost as wide as the
+                        column itself — the "huge red bar" in the column.
+
+                        Fix, scoped to just this list so it never touches
+                        the global scrollbar elsewhere on the site:
+                          - overflow-y-auto + overflow-x-hidden: this list
+                            only ever scrolls vertically. Horizontal
+                            overflow is prevented at the source (truncate
+                            on the link label) rather than scrolled.
+                          - [&::-webkit-scrollbar]:w-1 and friends: a
+                            hairline 4px thumb instead of the global
+                            thick/red one, only rendered by the browser
+                            when content actually exceeds max-h (native
+                            `auto` behavior — no JS needed to detect
+                            overflow).
+                          - scrollbarWidth/scrollbarColor: same thin,
+                            neutral treatment on Firefox, which ignores
+                            the ::-webkit-scrollbar rules.
+                          - pr-1.5: keeps the thumb from sitting flush
+                            against link text when it does appear.
+                      */}
+                      <ul
+                        className="space-y-0.5 max-h-56 overflow-y-auto overflow-x-hidden pr-1.5
+                          [&::-webkit-scrollbar]:w-1
+                          [&::-webkit-scrollbar-track]:bg-transparent
+                          [&::-webkit-scrollbar-thumb]:bg-gray-300
+                          [&::-webkit-scrollbar-thumb]:rounded-full
+                          hover:[&::-webkit-scrollbar-thumb]:bg-gray-400"
+                        style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}
+                      >
+                        {group.links.map((link) => (
+                          <li key={link.label}>
+                            <Link to={link.href}
+                              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 -mx-2 text-[13px]
+                                font-body text-dillo-charcoal hover:bg-dillo-cream hover:text-dillo-red
+                                transition-colors duration-150">
+                              {link.icon && <span className="text-xs flex-shrink-0">{link.icon}</span>}
+                              <span className="truncate">{link.label}</span>
+                              {link.badge && (
+                                <span className="ml-auto flex-shrink-0 text-[9px] bg-dillo-red text-white
+                                  px-1.5 py-0.5 rounded font-bold leading-none">
+                                  {link.badge}
+                                </span>
+                              )}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* ══════════════════════════════════════════════════════

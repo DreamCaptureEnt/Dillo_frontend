@@ -242,16 +242,16 @@ export default function AboutPage() {
             </div>
             <div className="flex gap-4 mt-8">
               <a href="https://youtube.com" target="_blank" rel="noreferrer"
-                className="w-9 h-9 bg-white/10 hover:bg-dillo-red flex items-center justify-center transition-colors">
-                <Youtube size={16} />
+                className="group w-9 h-9 bg-white/10 hover:bg-[#FF0000] flex items-center justify-center transition-colors">
+                <Youtube size={16} className="text-[#FF0000] group-hover:text-white" />
               </a>
               <a href="https://instagram.com" target="_blank" rel="noreferrer"
-                className="w-9 h-9 bg-white/10 hover:bg-dillo-red flex items-center justify-center transition-colors">
-                <Instagram size={16} />
+                className="group w-9 h-9 bg-white/10 hover:bg-[#E4405F] flex items-center justify-center transition-colors">
+                <Instagram size={16} className="text-[#E4405F] group-hover:text-white" />
               </a>
               <a href="https://facebook.com" target="_blank" rel="noreferrer"
-                className="w-9 h-9 bg-white/10 hover:bg-dillo-red flex items-center justify-center transition-colors">
-                <Facebook size={16} />
+                className="group w-9 h-9 bg-white/10 hover:bg-[#1877F2] flex items-center justify-center transition-colors">
+                <Facebook size={16} className="text-[#1877F2] group-hover:text-white" />
               </a>
             </div>
           </div>

@@ -21,7 +21,7 @@ export default {
         }
       },
       fontFamily: {
-        display: ['Playfair Display', 'Georgia', 'serif'],
+        display: ['Lato', 'sans-serif'],
         body: ['Lato', 'sans-serif'],
         cinzel: ['Cinzel', 'serif'],
       },

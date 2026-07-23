@@ -58,7 +58,7 @@ function Stat({ label, value }) {
   return (
     <div className="bg-white border border-gray-100 p-5 hover:border-gray-200 transition-colors">
       <p className="font-cinzel text-xs tracking-widest uppercase text-dillo-gold">{label}</p>
-      <p className="font-display text-3xl font-bold text-dillo-charcoal mt-2">{value}</p>
+      <p className="font-display-auto text-3xl font-bold text-dillo-charcoal mt-2">{value}</p>
     </div>
   );
 }
@@ -384,6 +384,53 @@ function slugify(str) {
     .replace(/^-+|-+$/g, '');
 }
 
+function buildUniqueSlug(baseSlug, existingSlugs = [], fallback = 'item') {
+  const normalizedBase = (baseSlug || fallback)
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  const base = normalizedBase || fallback;
+  const existing = new Set(
+    (existingSlugs || [])
+      .map(item => String(item || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  if (!existing.has(base)) return base;
+
+  const match = base.match(/^(.*?)(?:-(\d+))$/);
+  const baseStem = match ? match[1] : base;
+  const startIndex = match ? Number(match[2]) : 1;
+
+  let candidate = base;
+  let index = startIndex;
+  while (existing.has(candidate)) {
+    candidate = `${baseStem}-${index}`;
+    index += 1;
+  }
+
+  return candidate;
+}
+
+async function ensureUniqueSlug(baseSlug, endpoint, currentSlug = '') {
+  const base = slugify(baseSlug || 'item');
+  if (!base) return '';
+  if (currentSlug && base === currentSlug) return currentSlug;
+
+  try {
+    const data = await apiFetch(`${endpoint}${toQuery({ page_size: 1000 })}`);
+    const existingSlugs = (data.results || []).map(item => item.slug).filter(Boolean);
+    return buildUniqueSlug(base, existingSlugs);
+  } catch (error) {
+    console.error('Unable to resolve a unique slug:', error);
+    return base;
+  }
+}
+
 // ─── Toggle Checkbox ──────────────────────────────────────────────────────────
 function ToggleCard({ checked, onChange, label, hint }) {
   return (
@@ -509,8 +556,15 @@ function ProductForm({
     setSaving(true);
     try {
       const { image_files, images, ...rest } = form;
+      const resolvedSlug = isEdit
+        ? form.slug
+        : await ensureUniqueSlug(form.slug || form.name, '/sarees/', product?.slug);
+      if (!isEdit && resolvedSlug !== form.slug) {
+        change('slug', resolvedSlug);
+      }
       const payload = {
         ...rest,
+        slug: resolvedSlug,
         image_paths:     images,
         price:          Number(form.price),
         original_price: Number(form.original_price || form.price),
@@ -675,7 +729,7 @@ function ProductForm({
           <SectionHeading>Pricing & Stock</SectionHeading>
           <div className="grid md:grid-cols-4 gap-4">
             <div>
-              <FieldLabel required hint="MRP before discount">Original price (?)</FieldLabel>
+              <FieldLabel required hint="MRP before discount">Original price (₹)</FieldLabel>
               <input className="input-field w-full" type="number" min="0" step="0.01" placeholder="4500.00"
                 value={form.original_price} onChange={e => handlePriceChange('original_price', e.target.value)} required />
             </div>
@@ -688,7 +742,7 @@ function ProductForm({
               </div>
             </div>
             <div>
-              <FieldLabel required hint="Calculated from original price and discount">Selling price (?)</FieldLabel>
+              <FieldLabel required hint="Calculated from original price and discount">Selling price (₹)</FieldLabel>
               <input className="input-field w-full" type="number" min="0" step="0.01" placeholder="3500.00"
                 value={form.price} onChange={e => handlePriceChange('price', e.target.value)} required />
             </div>
@@ -701,7 +755,7 @@ function ProductForm({
           {form.price > 0 && form.original_price > 0 && (
             <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-sm">
               <p className="font-body text-sm text-green-700">
-                Customer saves ?{(Number(form.original_price) - Number(form.price)).toLocaleString('en-IN')} - {form.discount}% off
+                Customer saves ₹{(Number(form.original_price) - Number(form.price)).toLocaleString('en-IN')} - @{form.discount}% off
               </p>
             </div>
           )}
@@ -1041,7 +1095,7 @@ function HomeScreenAdmin() {
   );
 }
 
-function ProductsAdmin({ onAdminNavigate }) {
+function ProductsAdmin({ onAdminNavigate, stockFilter = '', onStockFilterChange }) {
   const [search,        setSearch]        = useState('');
   const [pageSize,      setPageSize]      = useState(5);
   const [editing,       setEditing]       = useState(null);   // product obj or null
@@ -1056,8 +1110,23 @@ function ProductsAdmin({ onAdminNavigate }) {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const formAnchorRef = useRef(null);
 
+  const isLowStockView = stockFilter === 'low';
   const params = useMemo(() => ({ search }), [search]);
-  const { data, loading, page, setPage, reload } = usePagedResource('/sarees/', params, pageSize);
+  const effectivePageSize = isLowStockView ? 200 : pageSize;
+  const { data, loading, page, setPage, reload } = usePagedResource('/sarees/', params, effectivePageSize);
+  const tableProducts = useMemo(() => {
+    if (!isLowStockView) return data.results;
+    return data.results.filter(product => Number(product.stock_count || 0) <= 5);
+  }, [data.results, isLowStockView]);
+  const tableData = useMemo(() => {
+    if (!isLowStockView) return data;
+    return {
+      ...data,
+      count: tableProducts.length,
+      next: null,
+      previous: null,
+    };
+  }, [data, isLowStockView, tableProducts.length]);
 
   const handleSearchChange = (value) => {
     setSearch(value);
@@ -1066,6 +1135,11 @@ function ProductsAdmin({ onAdminNavigate }) {
 
   const handlePageSizeChange = (value) => {
     setPageSize(Number(value));
+    setPage(1);
+  };
+
+  const clearStockFilter = () => {
+    onStockFilterChange?.('');
     setPage(1);
   };
 
@@ -1130,12 +1204,22 @@ function ProductsAdmin({ onAdminNavigate }) {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
+          {isLowStockView && (
+            <button
+              type="button"
+              onClick={clearStockFilter}
+              className="flex items-center gap-2 px-3 py-2 font-body text-xs font-semibold border bg-yellow-50 text-yellow-800 border-yellow-200 hover:border-yellow-400 transition-colors"
+            >
+              Low stock only <X size={13} />
+            </button>
+          )}
           <label className="flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 font-body text-xs text-gray-500">
             Page size
             <select
               className="outline-none bg-transparent text-dillo-charcoal font-semibold"
               value={pageSize}
               onChange={e => handlePageSizeChange(e.target.value)}
+              disabled={isLowStockView}
             >
               {[5, 10, 15, 20].map(size => (
                 <option key={size} value={size}>{size}</option>
@@ -1215,7 +1299,7 @@ function ProductsAdmin({ onAdminNavigate }) {
             </tr>
           </thead>
           <tbody>
-            {data.results.map(product => {
+            {tableProducts.map(product => {
               const isCurrentlyEditing = editing?.id === product.id;
               return (
                 <tr key={product.id}
@@ -1279,13 +1363,27 @@ function ProductsAdmin({ onAdminNavigate }) {
                 </tr>
               );
             })}
-            {!loading && data.results.length === 0 && (
+            {!loading && tableProducts.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-12 text-center">
                   <Boxes size={32} className="mx-auto mb-3 text-gray-200" />
-                  <p className="font-body text-gray-400">{search ? `No products matching "${search}"` : 'No products yet. Add your first saree!'}</p>
-                  {search && (
-                    <button onClick={() => setSearch('')} className="mt-2 font-body text-sm text-dillo-red hover:underline">Clear search</button>
+                  <p className="font-body text-gray-400">
+                    {isLowStockView
+                      ? 'No low stock products found.'
+                      : search
+                        ? `No products matching "${search}"`
+                        : 'No products yet. Add your first saree!'}
+                  </p>
+                  {(search || isLowStockView) && (
+                    <button
+                      onClick={() => {
+                        setSearch('');
+                        if (isLowStockView) clearStockFilter();
+                      }}
+                      className="mt-2 font-body text-sm text-dillo-red hover:underline"
+                    >
+                      Clear filters
+                    </button>
                   )}
                 </td>
               </tr>
@@ -1298,7 +1396,7 @@ function ProductsAdmin({ onAdminNavigate }) {
           </div>
         )}
       </div>
-      <Pager page={page} data={data} setPage={setPage} />
+      <Pager page={page} data={tableData} setPage={setPage} />
     </section>
   );
 }
@@ -1321,9 +1419,15 @@ function SimpleTaxonomyAdmin({ title, path, hasTamil = false }) {
     setError('');
     setSaving(true);
     try {
+      const resolvedSlug = editing
+        ? form.slug
+        : await ensureUniqueSlug(form.slug || form.name, path, editing?.slug);
+      if (!editing && resolvedSlug !== form.slug) {
+        setForm(f => ({ ...f, slug: resolvedSlug }));
+      }
       const payload = hasTamil
-        ? form
-        : { name: form.name, slug: form.slug, sort_order: form.sort_order, is_active: form.is_active };
+        ? { ...form, slug: resolvedSlug }
+        : { name: form.name, slug: resolvedSlug, sort_order: form.sort_order, is_active: form.is_active };
       await apiFetch(editing ? `${path}${editing.slug}/` : path, {
         method: editing ? 'PATCH' : 'POST',
         body: JSON.stringify(payload),
@@ -1467,9 +1571,20 @@ function OptionTableAdmin({ title, path, mode = 'name', onBack }) {
       const endpoint = editing
         ? `${path}${isInfo ? `${editing.id}/` : `${editing.slug}/`}`
         : path;
+      const payload = isInfo
+        ? form
+        : {
+            ...form,
+            slug: editing
+              ? form.slug
+              : await ensureUniqueSlug(form.slug || form.name, path, editing?.slug),
+          };
+      if (!editing && !isInfo && payload.slug !== form.slug) {
+        setForm(f => ({ ...f, slug: payload.slug }));
+      }
       await apiFetch(endpoint, {
         method: editing ? 'PATCH' : 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       cancel();
       reload();
@@ -2063,7 +2178,7 @@ function UsersAdmin() {
 }
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
-function Overview() {
+function Overview({ onShowLowStock }) {
   const [summary, setSummary] = useState(null);
   useEffect(() => { apiFetch('/admin/dashboard/').then(setSummary).catch(console.error); }, []);
   if (!summary) return (
@@ -2079,7 +2194,13 @@ function Overview() {
         <Stat label="Users"     value={summary.totals.users} />
         <Stat label="Orders"    value={summary.totals.orders} />
         <Stat label="Revenue"   value={formatPrice(Number(summary.totals.revenue || 0))} />
-        <Stat label="Low Stock" value={summary.totals.low_stock} />
+        <button
+          type="button"
+          onClick={onShowLowStock}
+          className="w-full text-left transition-transform hover:-translate-y-0.5 focus:outline-none"
+        >
+          <Stat label="Low Stock" value={summary.totals.low_stock} />
+        </button>
       </div>
       <div className="grid lg:grid-cols-2 gap-5">
         <section className="bg-white border border-gray-100 p-5">
@@ -2122,6 +2243,7 @@ function Overview() {
 export default function AdminDashboardPage() {
   const { user, loading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [productStockFilter, setProductStockFilter] = useState('');
   const primaryTabId = getPrimaryTabId(activeTab);
   const headingTab = tabs.find(t => t.id === primaryTabId);
   const HeadingIcon = headingTab?.icon || LayoutDashboard;
@@ -2134,8 +2256,15 @@ export default function AdminDashboardPage() {
   );
   if (!user?.is_staff) return <Navigate to="/admin/login" replace />;
 
+  const showLowStockProducts = () => {
+    setProductStockFilter('low');
+    setActiveTab('products');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
+    if (getPrimaryTabId(tabId) !== 'products') setProductStockFilter('');
     // Only scroll to top when switching tabs — not on any other interaction
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
@@ -2204,9 +2333,15 @@ export default function AdminDashboardPage() {
           </h2>
         </div>
 
-        {activeTab === 'overview'    && <Overview />}
+        {activeTab === 'overview'    && <Overview onShowLowStock={showLowStockProducts} />}
         {activeTab === 'home-screen' && <HomeScreenAdmin />}
-        {activeTab === 'products'    && <ProductsAdmin onAdminNavigate={handleTabChange} />}
+        {activeTab === 'products'    && (
+          <ProductsAdmin
+            onAdminNavigate={handleTabChange}
+            stockFilter={productStockFilter}
+            onStockFilterChange={setProductStockFilter}
+          />
+        )}
         {activeTab === 'categories'  && <SimpleTaxonomyAdmin title="Category" path="/saree-categories/" hasTamil />}
         {activeTab === 'product-names' && <OptionTableAdmin title="Product Name" path="/product-name-options/" onBack={() => handleTabChange('products')} />}
         {activeTab === 'saree-types' && <OptionTableAdmin title="Saree Type" path="/saree-type-options/" onBack={() => handleTabChange('products')} />}

@@ -1,9 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin, Youtube, Instagram, Facebook, ArrowRight } from 'lucide-react';
 import DilloLogo from './../assets/Logo.png';
 
 export default function Footer() {
+  const [email, setEmail] = useState('');
+
+  const handleSubscribe = (event) => {
+    event.preventDefault();
+    const normalized = email.trim();
+    if (!normalized) return;
+    const subject = encodeURIComponent('New subscriber from Dillo');
+    const body = encodeURIComponent(`Hello Dillo,\n\nNew subscriber email: ${normalized}\n`);
+    window.location.href = `mailto:info@dillo.in?subject=${subject}&body=${body}`;
+  };
+
   return (
     <footer className="bg-dillo-charcoal text-white border-t border-dillo-gold/20">
       {/* Newsletter strip */}
@@ -15,10 +26,12 @@ export default function Footer() {
               Get exclusive offers, new arrivals & live show alerts
             </p>
           </div>
-          <form className="flex flex-col sm:flex-row gap-0 w-full md:w-auto max-w-md" onSubmit={e => e.preventDefault()}>
+          <form className="flex flex-col sm:flex-row gap-0 w-full md:w-auto max-w-md" onSubmit={handleSubscribe}>
             <input
               type="email"
               placeholder="Your email address"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className="flex-1 px-4 py-3 text-dillo-charcoal text-sm font-body focus:outline-none min-w-0 sm:min-w-[240px]"
             />
             <button type="submit" className="bg-dillo-charcoal hover:bg-black text-white px-5 py-3 
@@ -46,16 +59,16 @@ export default function Footer() {
           </p>
           <div className="flex gap-4 mt-6">
             <a href="https://youtube.com" target="_blank" rel="noreferrer"
-              className="w-9 h-9 bg-white/15 hover:bg-dillo-red flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5">
-              <Youtube size={16} />
+              className="group w-9 h-9 bg-white/15 hover:bg-[#FF0000] flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5">
+              <Youtube size={16} className="text-[#FF0000] group-hover:text-white" />
             </a>
             <a href="https://instagram.com" target="_blank" rel="noreferrer"
-              className="w-9 h-9 bg-white/15 hover:bg-dillo-red flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5">
-              <Instagram size={16} />
+              className="group w-9 h-9 bg-white/15 hover:bg-[#E4405F] flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5">
+              <Instagram size={16} className="text-[#E4405F] group-hover:text-white" />
             </a>
             <a href="https://facebook.com" target="_blank" rel="noreferrer"
-              className="w-9 h-9 bg-white/15 hover:bg-dillo-red flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5">
-              <Facebook size={16} />
+              className="group w-9 h-9 bg-white/15 hover:bg-[#1877F2] flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5">
+              <Facebook size={16} className="text-[#1877F2] group-hover:text-white" />
             </a>
           </div>
         </div>
@@ -154,6 +167,17 @@ export default function Footer() {
           <p className="font-body text-xs text-white/70">
             © 2026 Dillo Textiles Pvt. Ltd. All rights reserved.
           </p>
+          <p className="font-body text-xs text-white/70">
+            Designed & developed:{' '}
+            <a
+              href="https://dreamcapture.in"
+              target="_blank"
+              rel="noreferrer"
+              className="text-dillo-gold hover:text-white transition-colors font-semibold"
+            >
+              Dream Capture Entertainment
+            </a>
+          </p>
           <div className="flex items-center gap-6">
             {[
               { label: 'Privacy Policy', href: '/privacy-policy' },
@@ -167,9 +191,15 @@ export default function Footer() {
           </div>
           {/* Payment icons */}
           <div className="flex items-center gap-2">
-            {['VISA', 'MC', 'UPI', 'Paytm', 'GPay'].map(p => (
-              <span key={p} className="bg-white/15 px-2 py-1 text-[10px] font-bold text-white/80">
-                {p}
+            {[
+              { label: 'VISA', className: 'bg-[#1A1F71] text-white' },
+              { label: 'MC', className: 'bg-[#EB001B] text-white' },
+              { label: 'UPI', className: 'bg-[#4F5D75] text-white' },
+              { label: 'Paytm', className: 'bg-[#00B9F1] text-white' },
+              { label: 'GPay', className: 'bg-[#4285F4] text-white' },
+            ].map(p => (
+              <span key={p.label} className={`px-2 py-1 text-[10px] font-bold ${p.className}`}>
+                {p.label}
               </span>
             ))}
           </div>

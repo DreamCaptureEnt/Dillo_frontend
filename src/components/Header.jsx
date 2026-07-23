@@ -9,6 +9,17 @@ import { useCart } from '../pages/CartContext';
 import { announcements } from '../products.js';
 import { apiFetch } from '../api';
 
+function SocialBrandIcon({ platform, size = 14 }) {
+  const normalized = platform?.toLowerCase();
+  if (normalized === 'youtube') {
+    return <Youtube size={size} className="text-[#FF0000] flex-shrink-0" />;
+  }
+  if (normalized === 'instagram') {
+    return <Instagram size={size} className="text-[#E4405F] flex-shrink-0" />;
+  }
+  return null;
+}
+
 /*
   Logo dimensions: 562 × 444 px  →  aspect ratio ≈ 1.266 (landscape-ish square)
   Strategy: fix HEIGHT per breakpoint, let width auto-scale via object-contain.
@@ -195,8 +206,8 @@ export default function Header() {
         {
           heading: 'Platforms',
           links: [
-            { label: 'YouTube',   href: '/live-show#youtube',   icon: '▶️' },
-            { label: 'Instagram', href: '/live-show#instagram', icon: '📷' },
+            { label: 'YouTube',   href: '/live-show#youtube',   platform: 'youtube' },
+            { label: 'Instagram', href: '/live-show#instagram', platform: 'instagram' },
           ],
         },
       ],
@@ -239,21 +250,21 @@ export default function Header() {
           <div className="flex items-center gap-6">
             <a href="tel:+919876543210"
               className="flex items-center gap-1.5 hover:text-dillo-red transition-colors whitespace-nowrap">
-              <Phone size={12} /> +91 98765 43210
+              <Phone size={12} className="text-[#16A34A] flex-shrink-0" /> +91 98765 43210
             </a>
             <a href="mailto:info@dillo.in"
               className="flex items-center gap-1.5 hover:text-dillo-red transition-colors whitespace-nowrap">
-              <Mail size={12} /> info@dillo.in
+              <Mail size={12} className="text-[#2563EB] flex-shrink-0" /> info@dillo.in
             </a>
           </div>
           <div className="flex items-center gap-4">
             <a href="https://youtube.com" target="_blank" rel="noreferrer"
               className="flex items-center gap-1 hover:text-dillo-red transition-colors whitespace-nowrap">
-              <Youtube size={13} /> YouTube
+              <SocialBrandIcon platform="youtube" size={13} /> YouTube
             </a>
             <a href="https://instagram.com" target="_blank" rel="noreferrer"
               className="flex items-center gap-1 hover:text-dillo-red transition-colors whitespace-nowrap">
-              <Instagram size={13} /> Instagram
+              <SocialBrandIcon platform="instagram" size={13} /> Instagram
             </a>
             <span className="text-dillo-gold">•</span>
             <span className="whitespace-nowrap">Free shipping above ₹2000</span>
@@ -533,7 +544,7 @@ export default function Header() {
                               className="flex items-center gap-1.5 rounded-md px-2 py-1.5 -mx-2 text-[13px]
                                 font-body text-dillo-charcoal hover:bg-dillo-cream hover:text-dillo-red
                                 transition-colors duration-150">
-                              {link.icon && <span className="text-xs flex-shrink-0">{link.icon}</span>}
+                              {link.platform && <SocialBrandIcon platform={link.platform} size={13} />}
                               <span className="truncate">{link.label}</span>
                               {link.badge && (
                                 <span className="ml-auto flex-shrink-0 text-[9px] bg-dillo-red text-white
@@ -663,7 +674,7 @@ export default function Header() {
                                 to={link.href}
                                 className="flex items-center gap-2 text-sm font-body text-dillo-charcoal hover:text-dillo-red"
                               >
-                                {link.icon && <span>{link.icon}</span>}
+                                {link.platform && <SocialBrandIcon platform={link.platform} size={14} />}
                                 <span>{link.label}</span>
                               </Link>
                             ))}
@@ -691,7 +702,7 @@ export default function Header() {
                   className="btn-outline text-xs flex items-center gap-2
                     flex-1 justify-center py-3"
                 >
-                  <Youtube size={14} /> YouTube
+                  <SocialBrandIcon platform="youtube" size={14} /> YouTube
                 </a>
               </div>
             </div>

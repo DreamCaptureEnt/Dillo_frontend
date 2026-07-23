@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart, ShoppingCart, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '../pages/CartContext';
 import { formatPrice } from '../products.js';
@@ -7,6 +7,7 @@ import StarRating from './StarRating';
 
 export default function ProductCard({ product, view = 'grid' }) {
   const { wishlist, dispatch } = useCart();
+  const navigate = useNavigate();
   const isWishlisted = wishlist.includes(product.id);
   const images = Array.isArray(product.images) && product.images.length ? product.images : [];
   const [imageIndex, setImageIndex] = useState(0);
@@ -66,6 +67,12 @@ export default function ProductCard({ product, view = 'grid' }) {
     e.preventDefault();
     e.stopPropagation();
     dispatch({ type: 'TOGGLE_WISHLIST', payload: product.id });
+  };
+
+  const handleQuickView = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/products/${product.id}`);
   };
 
   if (view === 'list') {
@@ -177,13 +184,11 @@ export default function ProductCard({ product, view = 'grid' }) {
 
           {/* Quick view */}
           <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-            }}
+            onClick={handleQuickView}
             className="absolute top-12 right-3 w-8 h-8 bg-white text-gray-400
               hover:text-dillo-red flex items-center justify-center transition-all duration-200
               opacity-0 group-hover:opacity-100"
+            aria-label={`View ${product.name}`}
           >
             <Eye size={14} />
           </button>

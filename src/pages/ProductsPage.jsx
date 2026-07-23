@@ -79,6 +79,7 @@ export const FilterPanel = memo(function FilterPanel({
   typeOptions,
   occasionOptions,
   onClose,
+  onClearAll,
   isMobile = false,
 }) {
   const [openSections, setOpenSections] = useState([]);
@@ -97,10 +98,13 @@ export const FilterPanel = memo(function FilterPanel({
     });
   }, [setFilters]);
 
-  const clearAll = useCallback(() => setFilters({
-    category: [], type: [], occasion: [], color: [],
-    priceMin: 0, priceMax: DEFAULT_MAX_PRICE, inStockOnly: false,
-  }), [setFilters]);
+  const clearAll = useCallback(() => {
+    setFilters({
+      category: [], type: [], occasion: [], color: [],
+      priceMin: 0, priceMax: DEFAULT_MAX_PRICE, inStockOnly: false,
+    });
+    onClearAll?.();
+  }, [onClearAll, setFilters]);
 
   const hasFilters = (filters.category?.length || 0) + (filters.type?.length || 0) +
     (filters.occasion?.length || 0) + (filters.color?.length || 0) > 0 ||
@@ -290,7 +294,7 @@ export const FilterPanel = memo(function FilterPanel({
 });
 
 export default function ProductsPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState('grid');
   const [sortBy, setSortBy] = useState('featured');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -397,6 +401,10 @@ export default function ProductsPage() {
   }, [searchParams]);
 
   const stableSetFilters = useCallback(setFilters, []);
+  const clearAllFilters = useCallback(() => {
+    setSortBy('featured');
+    setSearchParams({});
+  }, [setSearchParams]);
 
   const typeOptions = useMemo(() => {
     const fromProducts = products.map(p => p.type).filter(Boolean);
@@ -408,6 +416,7 @@ export default function ProductsPage() {
 
     if (urlFilter === 'new') result = result.filter(p => p.isNew);
     if (urlFilter === 'bestseller') result = result.filter(p => p.isBestseller);
+    if (urlFilter === 'low-stock') result = result.filter(p => p.stockCount <= 5 && p.inStock);
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -486,6 +495,7 @@ export default function ProductsPage() {
               categories={categoryOptions}
               typeOptions={typeOptions}
               occasionOptions={occasionOptions}
+              onClearAll={clearAllFilters}
             />
           </div>
 
@@ -549,10 +559,13 @@ export default function ProductsPage() {
                   Try adjusting your filters or search terms
                 </p>
                 <button
-                  onClick={() => setFilters({
-                    category: [], type: [], occasion: [], color: [],
-                    priceMin: 0, priceMax: DEFAULT_MAX_PRICE, inStockOnly: false,
-                  })}
+                  onClick={() => {
+                    setFilters({
+                      category: [], type: [], occasion: [], color: [],
+                      priceMin: 0, priceMax: DEFAULT_MAX_PRICE, inStockOnly: false,
+                    });
+                    clearAllFilters();
+                  }}
                   className="btn-outline text-sm"
                 >
                   Clear All Filters
@@ -582,6 +595,7 @@ export default function ProductsPage() {
               categories={categoryOptions}
               typeOptions={typeOptions}
               occasionOptions={occasionOptions}
+              onClearAll={clearAllFilters}
               isMobile
               onClose={() => setMobileFiltersOpen(false)}
             />

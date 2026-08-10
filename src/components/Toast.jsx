@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ShoppingCart, Heart, CheckCircle, X } from 'lucide-react';
-import { useCart } from '../../context/CartContext';
+import { useCart } from '../pages/CartContext';
 
 export default function Toast() {
   const { notification, dispatch } = useCart();
@@ -30,11 +30,11 @@ export default function Toast() {
 
   return (
     <div
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] transition-all duration-300 
+      className={`fixed top-4 right-4 z-[9999] w-[calc(100vw-2rem)] max-w-sm transition-all duration-300
       ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
     >
-      <div className={`flex items-center gap-3 px-5 py-3 shadow-2xl text-white text-sm font-body
-        ${bgColors[notification.type] || 'bg-dillo-charcoal'} min-w-[260px] max-w-[400px]`}
+      <div className={`flex items-center gap-3 px-4 py-3 shadow-2xl text-white text-sm font-body rounded-sm
+        ${bgColors[notification.type] || 'bg-dillo-charcoal'}`}
       >
         {icons[notification.type]}
         <span className="flex-1">{notification.message}</span>

@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { LogoLoader } from "./components/Preloader";
 import CartDrawer from "./pages/CartDrawer";
+import Toast from "./components/Toast";
 
 import HomePage from "./pages/HomePage";
 import ProductsPage from "./pages/ProductsPage";
@@ -61,6 +62,7 @@ function App() {
       <Header />
       {/* Cart Drawer — lives outside main so it overlays everything */}
       <CartDrawer />
+      <Toast />
 
       <main className="min-h-screen">
         <Routes>

@@ -141,7 +141,7 @@ export default function Header() {
   // Close mobile menu on resize to desktop
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1280) {
+      if (window.innerWidth >= 1024) {
         setMobileOpen(false);
       }
     };
@@ -355,7 +355,7 @@ export default function Header() {
               (5rem) so the middle "centered" column is centered between
               two truly equal gaps, regardless of what each side contains.
               ════════════════════════════════════════════════ */}
-          <div className="grid grid-cols-[5rem_1fr_5rem] xl:grid-cols-3 items-center h-16 xl:h-20 2xl:h-24">
+          <div className="grid grid-cols-[5rem_1fr_5rem] lg:grid-cols-3 items-center h-16 lg:h-20 2xl:h-24">
 
             {/* left spacer — fixed width, mirrors the right column exactly */}
             <div aria-hidden="true" />
@@ -373,10 +373,10 @@ export default function Header() {
                 className={[
                   'h-12 w-auto',
                   'sm:h-14',
-                  'xl:h-16',
+                  'lg:h-16',
                   '2xl:h-20',
                   'max-w-[90px]',
-                  'xl:max-w-[120px]',
+                  'lg:max-w-[120px]',
                   '2xl:max-w-[140px]',
                   'object-contain',
                   'object-center',
@@ -389,7 +389,7 @@ export default function Header() {
                 Fixed-width column (matches left spacer) so the logo column
                 in the middle is genuinely centered, not just "centered" in
                 whatever space happens to be left over. */}
-            <div className="xl:hidden flex items-center justify-end gap-1 flex-shrink-0">
+            <div className="lg:hidden flex items-center justify-end gap-1 flex-shrink-0">
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
                 className="p-2 text-dillo-charcoal hover:text-dillo-red transition-colors"
@@ -410,7 +410,7 @@ export default function Header() {
             </div>
 
             {/* right spacer on desktop — row 2 carries the real icons */}
-            <div className="hidden xl:block" aria-hidden="true" />
+            <div className="hidden lg:block" aria-hidden="true" />
           </div>
 
           {/* ════════════════════════════════════════════════
@@ -427,12 +427,10 @@ export default function Header() {
               so it no longer drifts left as the icon cluster's width
               changes (e.g. wishlist/cart badges appearing).
               ════════════════════════════════════════════════ */}
-          <div className="hidden xl:grid grid-cols-[1fr_auto_1fr] items-center h-12 border-t border-gray-100">
+          <div className="hidden lg:flex items-center gap-3 min-h-12 border-t border-gray-100 py-1.5">
 
             {/* left spacer — balances the icon cluster so col 2 is truly centered */}
-            <div aria-hidden="true" />
-
-            <nav className="flex items-center justify-center gap-0.5 justify-self-center">
+            <nav className="flex flex-1 min-w-0 items-center justify-start xl:justify-center gap-0.5 overflow-visible pr-2">
               {navItems.map((item) => (
                 <div
                   key={item.label}
@@ -442,7 +440,7 @@ export default function Header() {
                 >
                   <Link
                     to={item.href}
-                    className={`flex items-center gap-1 px-2 2xl:px-3 py-2 text-xs 2xl:text-sm
+                    className={`flex items-center gap-1 px-1.5 xl:px-2 2xl:px-3 py-2 text-[11px] xl:text-xs 2xl:text-sm
                       font-body font-semibold tracking-wide uppercase whitespace-nowrap
                       transition-colors duration-200 relative
                       ${item.highlight ? 'text-dillo-red' : 'text-dillo-charcoal hover:text-dillo-red'}
@@ -503,7 +501,7 @@ export default function Header() {
               ))}
             </nav>
 
-            <div className="flex items-center gap-1.5 justify-self-end">
+            <div className="flex shrink-0 items-center gap-1.5 justify-end">
               <button onClick={() => setSearchOpen(!searchOpen)}
                 className="p-2 hover:text-dillo-red transition-colors text-dillo-charcoal"
                 aria-label="Search">
@@ -533,7 +531,7 @@ export default function Header() {
                   hover:bg-dillo-red-dark transition-colors relative"
                 aria-label="Cart">
                 <ShoppingCart size={18} />
-                <span className="text-sm font-body font-semibold">Cart</span>
+                <span className="hidden 2xl:inline text-sm font-body font-semibold">Cart</span>
                 {cartCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 bg-dillo-gold text-white
                     text-[10px] w-4 h-4 flex items-center justify-center font-bold">
@@ -576,7 +574,7 @@ export default function Header() {
             MOBILE DRAWER  (< xl)
             ══════════════════════════════════════════════════════ */}
         {mobileOpen && (
-          <div className="xl:hidden bg-white border-t border-gray-100 animate-slide-up
+          <div className="lg:hidden bg-white border-t border-gray-100 animate-slide-up
             shadow-2xl max-h-[calc(100dvh-64px)] overflow-y-auto">
 
             {/* 1. Quick-action strip */}
@@ -720,7 +718,7 @@ export default function Header() {
         </div>
       </header>
       
-      <div className="h-16 xl:h-32 2xl:h-36" aria-hidden="true" />
+      <div className="h-20 lg:h-36 2xl:h-40" aria-hidden="true" />
     </>
   );
 }

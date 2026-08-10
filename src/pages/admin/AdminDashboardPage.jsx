@@ -2615,7 +2615,7 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-dillo-ivory">
       <AdminToastHost />
       {/* Header */}
-      <div className="bg-dillo-charcoal text-white sticky top-0 z-40 shadow-md">
+      <div className="bg-dillo-charcoal text-white relative z-30 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div>
             <p className="font-cinzel text-[10px] tracking-widest uppercase text-dillo-gold">Dillo Admin</p>

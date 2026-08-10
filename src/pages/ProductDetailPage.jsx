@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Heart, ShoppingCart, Share2, Truck, Shield, RefreshCw,
@@ -86,6 +86,7 @@ function ImageViewer({ images, video }) {
   const [active, setActive] = useState(0);
   const [zoomed, setZoomed] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  const touchStartRef = useRef(null);
   const allMedia = video ? [...images, 'VIDEO'] : images;
 
   useEffect(() => {
@@ -97,25 +98,62 @@ function ImageViewer({ images, video }) {
     setActive(a => (a - 1 + allMedia.length) % allMedia.length);
   const next = () => setActive(a => (a + 1) % allMedia.length);
 
+  const handleTouchStart = e => {
+    if (zoomed) return;
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = e => {
+    if (zoomed) return;
+    if (!touchStartRef.current || allMedia.length <= 1) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.25) {
+      if (dx < 0) next();
+      else prev();
+    }
+  };
+
   const handleMouseMove = e => {
     if (!zoomed) return;
-    const r = e.currentTarget.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     setZoomPos({
-      x: ((e.clientX - r.left) / r.width) * 100,
-      y: ((e.clientY - r.top) / r.height) * 100,
+      x: ((e.clientX - rect.left) / rect.width) * 100,
+      y: ((e.clientY - rect.top) / rect.height) * 100,
     });
   };
 
+  const showMedia = (index) => {
+    setActive(index);
+    setZoomed(false);
+  };
+
+  const goPrev = () => {
+    setZoomed(false);
+    prev();
+  };
+
+  const goNext = () => {
+    setZoomed(false);
+    next();
+  };
+
   return (
-    <div className="flex flex-col gap-3 w-full">
+    <div className="w-full max-w-[430px] sm:max-w-[500px] lg:max-w-[520px] xl:max-w-[560px] mx-auto lg:mx-0">
+      <div className="flex flex-col gap-3 w-full">
       {/* ── Main frame ── */}
       <div
-        className={`relative w-full overflow-hidden bg-white border border-gray-100 select-none
-          ${zoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
-        style={{ aspectRatio: '3 / 4' }}
-        onClick={() => setZoomed(z => !z)}
+        className="relative w-full overflow-hidden bg-white border border-gray-100 select-none rounded-sm shadow-sm"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setZoomed(false)}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ aspectRatio: '3 / 4', touchAction: 'pan-y' }}
       >
         {allMedia[active] === 'VIDEO' ? (
           <div className="w-full h-full bg-black flex flex-col items-center justify-center gap-3">
@@ -130,24 +168,24 @@ function ImageViewer({ images, video }) {
               src={allMedia[active]}
               alt="Product"
               draggable={false}
-              className="w-full h-full object-contain"
-              style={
-                zoomed
-                  ? {
-                      transform: 'scale(2.5)',
-                      transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
-                      transition: 'none',
-                    }
-                  : { transition: 'transform 0.2s ease' }
-              }
+              className={`w-full h-full object-contain transition-transform duration-200 ${zoomed ? 'cursor-zoom-out' : ''}`}
+              style={zoomed ? {
+                transform: 'scale(1.8)',
+                transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+              } : undefined}
             />
-            {!zoomed && (
-              <div className="absolute bottom-3 right-3 bg-black/40 text-white text-xs
-                px-2 py-1 flex items-center gap-1 pointer-events-none">
-                <ZoomIn size={11} />
-                <span>Hover to zoom</span>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => setZoomed(value => !value)}
+              className={`absolute bottom-3 right-3 border shadow-sm w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-sm transition-colors ${
+                zoomed
+                  ? 'bg-dillo-red text-white border-dillo-red'
+                  : 'bg-white/95 text-dillo-charcoal border-gray-100 hover:bg-dillo-red hover:text-white'
+              }`}
+              aria-label={zoomed ? 'Reset zoom' : 'Zoom image'}
+            >
+              <ZoomIn size={16} />
+            </button>
           </>
         )}
 
@@ -155,20 +193,20 @@ function ImageViewer({ images, video }) {
         {allMedia.length > 1 && (
           <>
             <button
-              onClick={e => { e.stopPropagation(); prev(); }}
+              onClick={e => { e.stopPropagation(); goPrev(); }}
               aria-label="Previous image"
-              className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 bg-white/95
-                flex items-center justify-center shadow hover:bg-dillo-red hover:text-white transition-colors"
+              className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 bg-white/95 border border-gray-100
+                flex items-center justify-center shadow-sm hover:bg-dillo-red hover:text-white transition-colors rounded-sm"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={16} />
             </button>
             <button
-              onClick={e => { e.stopPropagation(); next(); }}
+              onClick={e => { e.stopPropagation(); goNext(); }}
               aria-label="Next image"
-              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 bg-white/95
-                flex items-center justify-center shadow hover:bg-dillo-red hover:text-white transition-colors"
+              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 bg-white/95 border border-gray-100
+                flex items-center justify-center shadow-sm hover:bg-dillo-red hover:text-white transition-colors rounded-sm"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
           </>
         )}
@@ -183,10 +221,10 @@ function ImageViewer({ images, video }) {
         {allMedia.map((img, i) => (
           <button
             key={i}
-            onClick={() => setActive(i)}
+            onClick={() => showMedia(i)}
             aria-label={`View image ${i + 1}`}
-            className={`flex-shrink-0 w-14 h-[4.5rem] sm:w-16 sm:h-20 overflow-hidden
-              border-2 transition-all
+            className={`flex-shrink-0 w-14 h-[4.5rem] sm:w-16 sm:h-20 lg:w-[4.25rem] lg:h-[5.25rem] overflow-hidden
+              border-2 rounded-sm transition-all bg-white
               ${i === active
                 ? 'border-dillo-red'
                 : 'border-transparent hover:border-dillo-gold'}`}
@@ -205,6 +243,8 @@ function ImageViewer({ images, video }) {
             )}
           </button>
         ))}
+      </div>
+
       </div>
     </div>
   );
@@ -249,7 +289,6 @@ function ProductInfo({ product }) {
       type: 'ADD_TO_CART',
       payload: { product, selectedColor, selectedSize, quantity },
     });
-    dispatch({ type: 'OPEN_CART' });
   };
 
   const handleBuyNow = () => {
@@ -951,10 +990,10 @@ export default function ProductDetailPage() {
 
       {/* Main grid */}
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
-        <div className="grid md:grid-cols-2 gap-6 lg:gap-14">
+        <div className="grid lg:grid-cols-[minmax(320px,560px)_minmax(0,1fr)] gap-6 lg:gap-10 xl:gap-14 items-start">
 
           {/* Sticky image panel */}
-          <div className="md:sticky md:top-24 md:self-start">
+          <div className="lg:sticky lg:top-40 lg:self-start">
             <ImageViewer images={product.images} video={product.video} />
           </div>
 

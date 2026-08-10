@@ -1,10 +1,10 @@
 // ─── Categories ───────────────────────────────────────────────────────────────
 export const categories = [
   { id: 'sarees', name: 'Sarees', nameTa: 'சேலைகள்', icon: '🥻', count: 248 },
-  { id: 'readymade', name: 'Readymade', nameTa: 'ரெடிமேட்', icon: '👗', count: 156 },
-  { id: 'javuli', name: 'Javuli', nameTa: 'ஜவுளி', icon: '🧵', count: 94 },
-  { id: 'blouse', name: 'Blouse Material', nameTa: 'ரவிக்கை', icon: '✂️', count: 72 },
-  { id: 'accessories', name: 'Accessories', nameTa: 'துணைப்பொருட்கள்', icon: '💍', count: 45 },
+  { id: 'womens', name: 'Women', nameTa: 'பெண்கள்', icon: '👗', count: 180 },
+  { id: 'mens', name: 'Men', nameTa: 'ஆண்கள்', icon: '👔', count: 134 },
+  { id: 'kids', name: 'Kids', nameTa: 'குழந்தைகள்', icon: '🧒', count: 92 },
+  { id: 'born-baby', name: 'Born Baby', nameTa: 'பிறந்த குழந்தை', icon: '👶', count: 48 },
 ];
 
 // ─── Saree Types ──────────────────────────────────────────────────────────────

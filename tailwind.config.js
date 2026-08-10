@@ -21,9 +21,9 @@ export default {
         }
       },
       fontFamily: {
-        display: ['Lato', 'sans-serif'],
-        body: ['Lato', 'sans-serif'],
-        cinzel: ['Cinzel', 'serif'],
+        display: ['Lato', 'system-ui', 'sans-serif'],
+        body: ['Lato', 'system-ui', 'sans-serif'],
+        cinzel: ['Lato', 'system-ui', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

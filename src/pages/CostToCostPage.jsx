@@ -14,7 +14,7 @@ import { FilterPanel } from './ProductsPage';
  * ──────────────────────────────────────────────────────────────────────────
  * ASSUMPTIONS — adjust these two spots if your API differs:
  *
- * 1. SALE_PRODUCTS_ENDPOINT — assumed to be the same `/sarees/` list endpoint
+ * 1. SALE_PRODUCTS_ENDPOINT — assumed to be the same `/products/` list endpoint
  *    the admin dashboard uses (see AdminDashboardPage.jsx -> usePagedResource).
  *    We ask for active products sorted by discount and filter client-side
  *    for discount >= 15, since we don't know if the backend supports a
@@ -36,7 +36,7 @@ import { FilterPanel } from './ProductsPage';
  * ──────────────────────────────────────────────────────────────────────────
  */
 
-const SALE_PRODUCTS_ENDPOINT = '/sarees/';
+const SALE_PRODUCTS_ENDPOINT = '/products/';
 const COUPONS_ENDPOINT = '/coupons/';
 const MIN_SALE_DISCOUNT = 15;
 const AUTO_REFRESH_MS = 60_000; // poll every 60s for "real-time" pricing/stock

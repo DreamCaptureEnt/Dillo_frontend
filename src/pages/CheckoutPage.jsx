@@ -173,16 +173,16 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 grid lg:grid-cols-3 gap-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 grid lg:grid-cols-3 gap-6 lg:gap-8">
 
         {/* Left: Forms */}
         <div className="lg:col-span-2 space-y-6">
 
           {/* Step 1: Address */}
           {step === 1 && (
-            <div className="bg-white border border-gray-100 p-6 md:p-8 animate-fade-in">
+            <div className="bg-white border border-gray-100 rounded-sm p-5 sm:p-6 md:p-8 animate-fade-in">
               <h2 className="font-display text-2xl font-bold text-dillo-charcoal mb-6">Delivery Address</h2>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4 sm:gap-5">
                 <div>
                   <label className="font-body text-sm text-gray-600 mb-1.5 block">First Name *</label>
                   <input name="firstName" value={form.firstName} onChange={handleFormChange}
@@ -251,7 +251,7 @@ export default function CheckoutPage() {
 
           {/* Step 2: Payment */}
           {step === 2 && (
-            <div className="bg-white border border-gray-100 p-6 md:p-8 animate-fade-in">
+            <div className="bg-white border border-gray-100 rounded-sm p-5 sm:p-6 md:p-8 animate-fade-in">
               <div className="flex items-center gap-4 mb-6">
                 <button onClick={() => setStep(1)} className="text-gray-400 hover:text-dillo-red transition-colors">
                   <ChevronLeft size={20} />
@@ -265,7 +265,7 @@ export default function CheckoutPage() {
                   return (
                     <label
                       key={pm.id}
-                      className={`flex items-center gap-4 border-2 p-4 cursor-pointer transition-all ${
+                      className={`flex items-center gap-4 border-2 rounded-sm p-4 cursor-pointer transition-all ${
                         paymentMethod === pm.id
                           ? 'border-dillo-red bg-red-50'
                           : 'border-gray-200 hover:border-gray-300'
@@ -335,7 +335,7 @@ export default function CheckoutPage() {
 
           {/* Step 3: Review */}
           {step === 3 && (
-            <div className="bg-white border border-gray-100 p-6 md:p-8 animate-fade-in">
+            <div className="bg-white border border-gray-100 rounded-sm p-5 sm:p-6 md:p-8 animate-fade-in">
               <div className="flex items-center gap-4 mb-6">
                 <button onClick={() => setStep(2)} className="text-gray-400 hover:text-dillo-red transition-colors">
                   <ChevronLeft size={20} />
@@ -344,7 +344,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Address summary */}
-              <div className="bg-dillo-cream border border-dillo-gold/20 p-4 mb-5">
+              <div className="bg-dillo-cream border border-dillo-gold/20 rounded-sm p-4 mb-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-cinzel text-xs tracking-widest text-dillo-gold uppercase mb-2">Delivering to</p>
@@ -358,7 +358,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* Payment summary */}
-              <div className="bg-dillo-cream border border-dillo-gold/20 p-4 mb-5">
+              <div className="bg-dillo-cream border border-dillo-gold/20 rounded-sm p-4 mb-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-cinzel text-xs tracking-widest text-dillo-gold uppercase mb-2">Payment Method</p>
@@ -377,7 +377,7 @@ export default function CheckoutPage() {
               <div className="space-y-4 mb-5">
                 <p className="font-cinzel text-xs tracking-widest text-dillo-gold uppercase">Items ({cartItems.length})</p>
                 {cartItems.map(item => (
-                  <div key={item.key} className="flex gap-4">
+                  <div key={item.key} className="flex gap-4 rounded-sm border border-gray-100 p-3">
                     <img
                       src={item.product.images[0]}
                       alt={item.product.name}
@@ -416,13 +416,13 @@ export default function CheckoutPage() {
 
         {/* Right: Order Summary */}
         <div className="space-y-5">
-          <div className="bg-white border border-gray-100 p-6 sticky top-24">
+          <div className="bg-white border border-gray-100 rounded-sm p-5 sm:p-6 sticky top-24">
             <h3 className="font-display text-lg font-bold text-dillo-charcoal mb-5">Order Summary</h3>
 
             {/* Mini cart items */}
             <div className="space-y-3 mb-5 max-h-52 overflow-y-auto">
               {cartItems.map(item => (
-                <div key={item.key} className="flex items-center gap-3">
+                <div key={item.key} className="flex items-center gap-3 rounded-sm border border-gray-100 p-2.5">
                   <div className="relative">
                     <img
                       src={item.product.images[0]}
@@ -448,18 +448,18 @@ export default function CheckoutPage() {
             {/* Coupon */}
             {!appliedCoupon ? (
               <div className="mb-4">
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2">
                   <input
                     type="text"
                     value={couponInput}
                     onChange={e => setCouponInput(e.target.value.toUpperCase())}
                     placeholder="Coupon code"
-                    className="flex-1 border border-gray-200 px-3 py-2 text-xs font-body focus:outline-none focus:border-dillo-red"
+                    className="flex-1 border border-gray-200 rounded-sm px-3 py-2.5 text-xs font-body focus:outline-none focus:border-dillo-red min-h-10"
                     onKeyDown={e => e.key === 'Enter' && dispatch({ type: 'APPLY_COUPON', payload: couponInput })}
                   />
                   <button
                     onClick={() => dispatch({ type: 'APPLY_COUPON', payload: couponInput })}
-                    className="bg-dillo-charcoal text-white px-3 py-2 text-xs font-body font-semibold hover:bg-dillo-red transition-colors"
+                    className="bg-dillo-charcoal text-white rounded-sm px-3 py-2 text-xs font-body font-semibold hover:bg-dillo-red transition-colors min-h-10"
                   >
                     Apply
                   </button>

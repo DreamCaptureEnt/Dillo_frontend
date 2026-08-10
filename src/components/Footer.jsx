@@ -80,11 +80,11 @@ export default function Footer() {
           </h4>
           <ul className="space-y-3">
             {[
-              { label: 'Sarees', href: '/products?category=sarees' },
+              { label: 'Products', href: '/products' },
               { label: 'New Arrivals', href: '/new-arrivals' },
               { label: 'Live Show', href: '/live-show' },
               // { label: 'Cost to Cost Sale', href: '/cost-to-cost' },
-              { label: 'Readymade', href: '/products?category=readymade' },
+              { label: 'Women', href: '/products?category=womens' },
               { label: 'About Us', href: '/about' },
             ].map(link => (
               <li key={link.label}>

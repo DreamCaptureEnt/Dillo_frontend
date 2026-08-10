@@ -54,7 +54,7 @@ export default function Preloader({ onDone }) {
         doneRef.current = true;
         onDone();
       }
-    }, 8200);
+    }, 8900);
     return () => {
       clearTimeout(hideTimer);
       clearTimeout(doneTimer);

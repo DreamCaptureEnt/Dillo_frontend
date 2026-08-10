@@ -77,11 +77,11 @@ export default function ProductCard({ product, view = 'grid' }) {
 
   if (view === 'list') {
     return (
-      <Link to={`/products/${product.id}`} className="block">
+      <Link to={`/products/${product.id}`} className="block w-full">
         <div className="bg-white border border-gray-100 hover:shadow-lg transition-all duration-300 
-          flex gap-0 overflow-hidden group">
+          flex gap-0 overflow-hidden group rounded-sm">
           {/* Image */}
-        <div className="relative w-28 sm:w-48 h-36 sm:h-56 flex-shrink-0 product-image-container group">
+        <div className="relative w-28 sm:w-44 md:w-48 h-36 sm:h-56 flex-shrink-0 product-image-container group bg-gray-50">
             <img
               src={currentImage}
               alt={product.name}
@@ -95,9 +95,9 @@ export default function ProductCard({ product, view = 'grid' }) {
           </div>
 
           {/* Details */}
-          <div className="flex-1 p-3 sm:p-5 flex flex-col justify-between min-w-0">
+          <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between min-w-0">
             <div>
-              <p className="text-xs text-dillo-gold font-body font-semibold uppercase tracking-widest mb-1">
+              <p className="text-[11px] text-dillo-gold font-body font-semibold uppercase tracking-wide mb-1">
                 {product.type}
               </p>
               <h3 className="font-display font-bold text-sm sm:text-lg text-dillo-charcoal leading-snug line-clamp-2">
@@ -109,21 +109,21 @@ export default function ProductCard({ product, view = 'grid' }) {
                 {product.description}
               </p>
             </div>
-            <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mt-4 gap-3">
               <div className="flex items-baseline gap-2 flex-wrap">
                 <span className="price-tag text-base sm:text-xl">{formatPrice(product.price)}</span>
                 {product.originalPrice > product.price && (
                   <span className="original-price">{formatPrice(product.originalPrice)}</span>
                 )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 sm:flex-shrink-0">
                 <button onClick={handleWishlist}
-                  className={`p-2 border transition-colors ${isWishlisted
+                  className={`w-10 h-10 flex items-center justify-center border rounded-sm transition-colors ${isWishlisted
                     ? 'border-pink-300 bg-pink-50 text-pink-500'
                     : 'border-gray-200 hover:border-dillo-red text-gray-400 hover:text-dillo-red'}`}>
                   <Heart size={16} fill={isWishlisted ? 'currentColor' : 'none'} />
                 </button>
-                <button onClick={handleAddToCart} className="btn-primary py-2 px-3 sm:px-4 text-xs flex items-center gap-1 sm:gap-2">
+                <button onClick={handleAddToCart} className="btn-primary py-2 px-3 sm:px-4 text-xs flex items-center gap-1 sm:gap-2 min-h-10">
                   <ShoppingCart size={14} /> <span className="hidden sm:inline">Add to Cart</span><span className="sm:hidden">Add</span>
                 </button>
               </div>
@@ -135,8 +135,8 @@ export default function ProductCard({ product, view = 'grid' }) {
   }
 
   return (
-    <Link to={`/products/${product.id}`} className="block">
-      <div className="product-card group h-full flex flex-col">
+    <Link to={`/products/${product.id}`} className="block w-full">
+      <div className="product-card group h-full w-full flex flex-col">
         {/* Image container */}
         <div className="relative overflow-hidden aspect-[3/4] product-image-container">
           <img
@@ -204,8 +204,8 @@ export default function ProductCard({ product, view = 'grid' }) {
         </div>
 
         {/* Info */}
-        <div className="p-4 flex flex-col flex-1">
-          <p className="text-[11px] font-cinzel text-dillo-gold uppercase tracking-widest mb-1">
+        <div className="p-3.5 sm:p-4 flex flex-col flex-1">
+          <p className="text-[11px] font-body font-semibold text-dillo-gold uppercase tracking-wide mb-1 truncate">
             {product.type}
           </p>
           <h3 className="font-body font-semibold text-dillo-charcoal text-sm leading-snug line-clamp-2 
@@ -230,15 +230,15 @@ export default function ProductCard({ product, view = 'grid' }) {
             </div>
           )}
 
-          <div className="flex items-center justify-between mt-3">
-            <div className="min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1.5 mt-3">
+            <div className="min-w-0 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
               <span className="price-tag text-base">{formatPrice(product.price)}</span>
               {product.originalPrice > product.price && (
-                <span className="original-price text-xs ml-1.5">{formatPrice(product.originalPrice)}</span>
+                <span className="original-price text-xs">{formatPrice(product.originalPrice)}</span>
               )}
             </div>
             {product.discount > 0 && (
-              <span className="text-xs font-body font-bold text-green-600">
+              <span className="text-xs font-body font-bold text-green-600 sm:text-right">
                 {product.discount}% off
               </span>
             )}

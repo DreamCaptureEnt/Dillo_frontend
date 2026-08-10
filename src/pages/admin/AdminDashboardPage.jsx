@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom';
 import {
   Boxes, ChevronDown, ChevronLeft, ChevronUp, ClipboardList, Edit, ImagePlus,
-  LayoutDashboard, LogOut, PackagePlus, Plus, Search, Tag, Trash2,
+  AlertCircle, CheckCircle, LayoutDashboard, LogOut, PackagePlus, Plus, Search, Tag, Trash2,
   Users, X, Video, Upload, GripVertical, CheckSquare, Square,
 } from 'lucide-react';
 import { apiFetch, toQuery } from '../../api';
@@ -22,6 +22,8 @@ const tabs = [
   { id: 'users',      label: 'Users',       icon: Users },
 ];
 
+const extraPageLabels = { subcategories: 'Subcategories' };
+
 const productInnerPages = {
   'product-names': 'Product Names',
   'saree-types': 'Saree Types',
@@ -30,6 +32,57 @@ const productInnerPages = {
 
 function getPrimaryTabId(tabId) {
   return productInnerPages[tabId] ? 'products' : tabId;
+}
+
+function notifyAdmin(message, type = 'success') {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('admin-toast', { detail: { message, type } }));
+}
+
+function AdminToastHost() {
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    const showToast = (event) => {
+      const detail = event.detail || {};
+      setToast({
+        message: detail.message || 'Action completed.',
+        type: detail.type === 'error' ? 'error' : 'success',
+      });
+    };
+    window.addEventListener('admin-toast', showToast);
+    return () => window.removeEventListener('admin-toast', showToast);
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(null), 3600);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  if (!toast) return null;
+
+  const Icon = toast.type === 'error' ? AlertCircle : CheckCircle;
+  const tone = toast.type === 'error'
+    ? 'border-red-200 bg-red-50 text-red-700'
+    : 'border-green-200 bg-green-50 text-green-700';
+
+  return (
+    <div className="fixed right-4 top-4 z-[90] w-[calc(100vw-2rem)] max-w-sm">
+      <div className={`flex items-start gap-3 border px-4 py-3 shadow-lg rounded-sm ${tone}`}>
+        <Icon size={18} className="mt-0.5 shrink-0" />
+        <p className="font-body text-sm font-semibold leading-snug flex-1">{toast.message}</p>
+        <button
+          type="button"
+          onClick={() => setToast(null)}
+          className="text-current/60 hover:text-current transition-colors"
+          aria-label="Dismiss notification"
+        >
+          <X size={15} />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ─── paged resource hook ──────────────────────────────────────────────────────
@@ -470,6 +523,8 @@ function ProductForm({
     name_ta:        product?.name_ta        || '',
     slug:           product?.slug           || '',
     category:       product?.category       || categories[0]?.id || '',
+    parent_category: null,
+    subcategory: null,
     occasion:       product?.occasion       || occasions[0]?.id  || '',
     saree_type:     product?.saree_type     || '',
     description:    product?.description    || '',
@@ -516,6 +571,44 @@ function ProductForm({
       : productNameOptions;
   }, [form.name, form.name_ta, productNameOptions]);
 
+  // Build parent/child category selects from `categories` prop
+  const categoryMap = useMemo(() => {
+    const map = new Map();
+    (categories || []).forEach(c => map.set(c.id, c));
+    return map;
+  }, [categories]);
+
+  const parentCategories = useMemo(() => (categories || []).filter(c => !c.parent), [categories]);
+
+  const childCategoriesByParent = useMemo(() => {
+    const acc = {};
+    (categories || []).forEach(c => {
+      const key = c.parent || 'root';
+      acc[key] = acc[key] || [];
+      acc[key].push(c);
+    });
+    return acc;
+  }, [categories]);
+
+  useEffect(() => {
+    if (!categories || categories.length === 0) return;
+    // derive category id/slug from product or existing form
+    const rawCat = product?.category || product?.category_slug || form.category || '';
+    const catStr = rawCat != null ? String(rawCat) : '';
+    const found = (categories || []).find(c => String(c.slug) === catStr || String(c.id) === catStr);
+    if (found) {
+      if (found.parent) {
+        setForm(f => ({ ...f, parent_category: found.parent, subcategory: found.id, category: found.id }));
+      } else {
+        setForm(f => ({ ...f, parent_category: found.id, subcategory: '', category: found.id }));
+      }
+      return;
+    }
+    if (parentCategories.length) {
+      setForm(f => ({ ...f, parent_category: parentCategories[0].id, subcategory: '', category: parentCategories[0].id }));
+    }
+  }, [product, categories]);
+
   const sareeTypeChoices = useMemo(() => {
     const names = new Set(sareeTypeOptions.map(item => item.name));
     return form.saree_type && !names.has(form.saree_type)
@@ -556,9 +649,12 @@ function ProductForm({
     setSaving(true);
     try {
       const { image_files, images, ...rest } = form;
+      // ensure category is the selected subcategory if present, otherwise parent
+      const finalCategory = form.subcategory || form.parent_category || rest.category || null;
+      rest.category = finalCategory ? Number(finalCategory) : null;
       const resolvedSlug = isEdit
         ? form.slug
-        : await ensureUniqueSlug(form.slug || form.name, '/sarees/', product?.slug);
+        : await ensureUniqueSlug(form.slug || form.name, '/products/', product?.slug);
       if (!isEdit && resolvedSlug !== form.slug) {
         change('slug', resolvedSlug);
       }
@@ -575,14 +671,16 @@ function ProductForm({
                           : form.information,
       };
       const method   = isEdit ? 'PATCH' : 'POST';
-      const endpoint = isEdit ? `/sarees/${product.slug}/` : '/sarees/';
+      const endpoint = isEdit ? `/products/${product.slug}/` : '/products/';
       const body = new FormData();
       body.append('payload', JSON.stringify(payload));
       image_files.forEach(file => body.append('uploaded_images', file));
       await apiFetch(endpoint, { method, body });
+      notifyAdmin(isEdit ? 'Product updated successfully.' : 'Product created successfully.');
       onSaved();
     } catch (err) {
       setError(err.message);
+      notifyAdmin(err.message || 'Unable to save product.', 'error');
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } finally {
       setSaving(false);
@@ -603,7 +701,7 @@ function ProductForm({
       <div className="bg-dillo-charcoal text-white px-5 py-4 flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-bold">
-            {isEdit ? `Editing: ${product.name}` : 'Add New Saree'}
+            {isEdit ? `Editing: ${product.name}` : 'Add New Product'}
           </h2>
           <p className="font-body text-xs text-white/60 mt-0.5">
             {isEdit ? 'Update product details below' : 'Fill in the details to add a new product to the catalogue'}
@@ -689,20 +787,34 @@ function ProductForm({
             </div>
             <div>
               <FieldLabel>Category</FieldLabel>
-              <select className="input-field w-full" value={form.category} onChange={e => change('category', Number(e.target.value))}>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <select className="input-field w-full" value={form.parent_category || ''} onChange={e => {
+                  const val = e.target.value ? Number(e.target.value) : null;
+                  setForm(f => ({ ...f, parent_category: val, subcategory: '', category: val }));
+                }}>
+                  {parentCategories.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+                <select className="input-field w-full" value={form.subcategory || ''} onChange={e => {
+                  const val = e.target.value ? Number(e.target.value) : '';
+                  setForm(f => ({ ...f, subcategory: val, category: val || f.parent_category }));
+                }}>
+                  <option value="">— None —</option>
+                  {(childCategoriesByParent[form.parent_category || 'root'] || []).map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div>
-              <FieldLabel required hint="e.g. Silk, Cotton, Chiffon">Saree type</FieldLabel>
+              <FieldLabel required hint="e.g. Silk, Cotton, Chiffon">Product type</FieldLabel>
               <div className="flex gap-2">
                 <select className="input-field flex-1" value={form.saree_type} onChange={e => change('saree_type', e.target.value)} required>
-                  <option value="">Select saree type</option>
+                  <option value="">Select product type</option>
                   {sareeTypeChoices.map(option => (
                     <option key={option.id || option.name} value={option.name}>{option.name}</option>
                   ))}
                 </select>
-                <button type="button" onClick={() => onAdminNavigate?.('saree-types')} className="btn-outline px-3" title="Manage saree types">
+                <button type="button" onClick={() => onAdminNavigate?.('saree-types')} className="btn-outline px-3" title="Manage product types">
                   <Plus size={14} />
                 </button>
               </div>
@@ -715,7 +827,7 @@ function ProductForm({
             </div>
             <div className="md:col-span-2">
               <FieldLabel required>Description</FieldLabel>
-              <textarea className="input-field w-full min-h-[100px] resize-y" placeholder="Describe the saree — weave, border, craftsmanship…"
+              <textarea className="input-field w-full min-h-[100px] resize-y" placeholder="Describe the product — fabric, fit, features, and styling…"
                 value={form.description} onChange={e => change('description', e.target.value)} required />
             </div>
 
@@ -841,7 +953,7 @@ function ProductForm({
             {saving ? (
               <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />{isEdit ? 'Updating…' : 'Creating…'}</>
             ) : (
-              isEdit ? 'Update Saree' : 'Create Saree'
+              isEdit ? 'Update' : 'Create'
             )}
           </button>
           <button type="button" onClick={onCancel} className="btn-outline px-6 py-2.5">
@@ -939,10 +1051,12 @@ function HomeScreenAdmin() {
         method: editing ? 'PATCH' : 'POST',
         body,
       });
+      notifyAdmin(editing ? 'Home screen image updated successfully.' : 'Home screen image added successfully.');
       reset();
       reload();
     } catch (err) {
       setError(err.message || 'Unable to save home screen image.');
+      notifyAdmin(err.message || 'Unable to save home screen image.', 'error');
     } finally {
       setSaving(false);
     }
@@ -950,9 +1064,14 @@ function HomeScreenAdmin() {
 
   const remove = async (item) => {
     if (!window.confirm(`Delete home screen image "${item.title || item.caption_label || item.id}"?`)) return;
-    await apiFetch(`/home-screen-images/${item.id}/`, { method: 'DELETE' });
-    if (editing?.id === item.id) reset();
-    reload();
+    try {
+      await apiFetch(`/home-screen-images/${item.id}/`, { method: 'DELETE' });
+      notifyAdmin('Home screen image deleted successfully.');
+      if (editing?.id === item.id) reset();
+      reload();
+    } catch (err) {
+      notifyAdmin(err.message || 'Unable to delete home screen image.', 'error');
+    }
   };
 
   return (
@@ -1113,7 +1232,7 @@ function ProductsAdmin({ onAdminNavigate, stockFilter = '', onStockFilterChange 
   const isLowStockView = stockFilter === 'low';
   const params = useMemo(() => ({ search }), [search]);
   const effectivePageSize = isLowStockView ? 200 : pageSize;
-  const { data, loading, page, setPage, reload } = usePagedResource('/sarees/', params, effectivePageSize);
+  const { data, loading, page, setPage, reload } = usePagedResource('/products/', params, effectivePageSize);
   const tableProducts = useMemo(() => {
     if (!isLowStockView) return data.results;
     return data.results.filter(product => Number(product.stock_count || 0) <= 5);
@@ -1143,29 +1262,41 @@ function ProductsAdmin({ onAdminNavigate, stockFilter = '', onStockFilterChange 
     setPage(1);
   };
 
-  useEffect(() => {
+useEffect(() => {
     Promise.all([
-      apiFetch('/saree-categories/?page_size=100'),
+      apiFetch('/product-categories/?page_size=100'),
+      apiFetch('/subcategories/?page_size=200'),
       apiFetch('/occasion-categories/?page_size=100'),
       apiFetch('/product-name-options/?page_size=100&is_active=true'),
-      apiFetch('/saree-type-options/?page_size=100&is_active=true'),
+      apiFetch('/product-type-options/?page_size=100&is_active=true'),
       apiFetch('/product-info-options/?page_size=100&is_active=true'),
-    ]).then(([cat, occ, productNames, sareeTypes, productInfo]) => setMeta({
-      categories: cat.results,
-      occasions: occ.results,
-      productNames: productNames.results,
-      sareeTypes: sareeTypes.results,
-      productInfo: productInfo.results,
-    }));
+    ]).then(([cat, subcat, occ, productNames, productTypes, productInfo]) => {
+      // Merge parent categories with subcategories into one flat list.
+      // Parent categories: parent = null (matches ProductForm's
+      // `parentCategories = categories.filter(c => !c.parent)`).
+      // Subcategories: parent = the parent category's numeric id (matches
+      // ProductForm's `childCategoriesByParent` keyed by `c.parent`).
+      const parentCategories = (cat.results || []).map(c => ({ ...c, parent: c.parent ?? null }));
+      const subcategories = (subcat.results || []).map(s => ({ ...s, parent: s.parent }));
+      setMeta({
+        categories: [...parentCategories, ...subcategories],
+        occasions: occ.results,
+        productNames: productNames.results,
+        sareeTypes: productTypes.results,
+        productInfo: productInfo.results,
+      });
+    });
   }, []);
 
   const remove = async (product) => {
     try {
-      await apiFetch(`/sarees/${product.slug}/`, { method: 'DELETE' });
+      await apiFetch(`/products/${product.slug}/`, { method: 'DELETE' });
+      notifyAdmin('Product deleted successfully.');
       setConfirmDelete(null);
       reload();
     } catch (err) {
       console.error(err);
+      notifyAdmin(err.message || 'Unable to delete product.', 'error');
     }
   };
 
@@ -1234,13 +1365,13 @@ function ProductsAdmin({ onAdminNavigate, stockFilter = '', onStockFilterChange 
                 : 'bg-white text-dillo-charcoal border-gray-200 hover:border-dillo-red hover:text-dillo-red'
             }`}
           >
-            <PackagePlus size={15} /> Add New Saree
+            <PackagePlus size={15} /> Add New Product
           </button>
           <button type="button" onClick={() => onAdminNavigate?.('product-names')} className="btn-outline text-xs px-3 py-2 flex items-center gap-1">
             <Plus size={13} /> Product Names
           </button>
           <button type="button" onClick={() => onAdminNavigate?.('saree-types')} className="btn-outline text-xs px-3 py-2 flex items-center gap-1">
-            <Plus size={13} /> Saree Types
+            <Plus size={13} /> Product Types
           </button>
           <button type="button" onClick={() => onAdminNavigate?.('product-info')} className="btn-outline text-xs px-3 py-2 flex items-center gap-1">
             <Plus size={13} /> Product Info
@@ -1271,7 +1402,7 @@ function ProductsAdmin({ onAdminNavigate, stockFilter = '', onStockFilterChange 
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4" onClick={() => setConfirmDelete(null)}>
           <div className="bg-white border border-gray-200 p-6 max-w-sm w-full space-y-4 rounded-sm" onClick={e => e.stopPropagation()}>
-            <h3 className="font-display text-lg font-bold text-dillo-charcoal">Delete Saree?</h3>
+            <h3 className="font-display text-lg font-bold text-dillo-charcoal">Delete Product?</h3>
             <p className="font-body text-sm text-gray-600">
               <span className="font-semibold">{confirmDelete.name}</span> will be permanently removed. This cannot be undone.
             </p>
@@ -1402,7 +1533,7 @@ function ProductsAdmin({ onAdminNavigate, stockFilter = '', onStockFilterChange 
 }
 
 // ─── SimpleTaxonomyAdmin ──────────────────────────────────────────────────────
-function SimpleTaxonomyAdmin({ title, path, hasTamil = false }) {
+function SimpleTaxonomyAdmin({ title, path, hasTamil = false, onManageSubcategories }) {
   const { data, page, setPage, reload } = usePagedResource(path);
   const [form, setForm]       = useState({ name: '', slug: '', name_ta: '', icon: '', sort_order: 0, is_active: true });
   const [editing, setEditing] = useState(null);
@@ -1426,18 +1557,20 @@ function SimpleTaxonomyAdmin({ title, path, hasTamil = false }) {
         setForm(f => ({ ...f, slug: resolvedSlug }));
       }
       const payload = hasTamil
-        ? { ...form, slug: resolvedSlug }
+        ? { name: form.name, slug: resolvedSlug, name_ta: form.name_ta, icon: form.icon, sort_order: form.sort_order, is_active: form.is_active }
         : { name: form.name, slug: resolvedSlug, sort_order: form.sort_order, is_active: form.is_active };
       await apiFetch(editing ? `${path}${editing.slug}/` : path, {
         method: editing ? 'PATCH' : 'POST',
         body: JSON.stringify(payload),
       });
+      notifyAdmin(`${title} ${editing ? 'updated' : 'created'} successfully.`);
       setForm({ name: '', slug: '', name_ta: '', icon: '', sort_order: 0, is_active: true });
       setEditing(null);
       setSlugManual(false);
       reload();
     } catch (err) {
       setError(err.message);
+      notifyAdmin(err.message || `Unable to save ${title.toLowerCase()}.`, 'error');
     } finally {
       setSaving(false);
     }
@@ -1446,7 +1579,14 @@ function SimpleTaxonomyAdmin({ title, path, hasTamil = false }) {
   const edit = (item) => {
     setEditing(item);
     setSlugManual(true);
-    setForm({ name: item.name, slug: item.slug, name_ta: item.name_ta || '', icon: item.icon || '', sort_order: item.sort_order, is_active: item.is_active });
+    setForm({
+      name: item.name,
+      slug: item.slug,
+      name_ta: item.name_ta || '',
+      icon: item.icon || '',
+      sort_order: item.sort_order,
+      is_active: item.is_active,
+    });
   };
 
   const cancel = () => {
@@ -1458,6 +1598,19 @@ function SimpleTaxonomyAdmin({ title, path, hasTamil = false }) {
 
   return (
     <section className="space-y-5">
+      {/* Subcategories entry point — categories only */}
+      {path === '/product-categories/' && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={onManageSubcategories}
+            className="btn-outline text-xs px-3 py-2 inline-flex items-center gap-1"
+          >
+            <Plus size={13} /> Subcategories
+          </button>
+        </div>
+      )}
+
       {/* Form */}
       <div className="bg-white border border-gray-100 overflow-hidden">
         <div className={`px-5 py-3 border-b border-gray-100 flex items-center justify-between ${editing ? 'bg-amber-50' : 'bg-dillo-cream'}`}>
@@ -1492,10 +1645,19 @@ function SimpleTaxonomyAdmin({ title, path, hasTamil = false }) {
                   value={form.name_ta} onChange={e => setForm(f => ({ ...f, name_ta: e.target.value }))} />
               </div>
             )}
-            <div className="flex items-end">
-              <button className="btn-primary w-full py-2.5 flex items-center justify-center gap-2" disabled={saving}>
+            <div>
+              <FieldLabel>Sort order</FieldLabel>
+              <input className="input-field w-full" type="number" min="0"
+                value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: Number(e.target.value) }))} />
+            </div>
+            <div className="flex items-end gap-2">
+              <label className="h-10 flex items-center gap-2 border border-gray-200 bg-white px-3 font-body text-xs text-gray-600">
+                <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
+                Active
+              </label>
+              <button className="btn-primary h-10 px-4 flex items-center justify-center gap-2" disabled={saving}>
                 {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
-                {editing ? 'Update' : 'Add'} {title}
+                {editing ? 'Update' : 'Add'}
               </button>
             </div>
           </div>
@@ -1521,6 +1683,179 @@ function SimpleTaxonomyAdmin({ title, path, hasTamil = false }) {
         {data.results.length === 0 && (
           <div className="md:col-span-2 xl:col-span-3 py-10 text-center text-gray-400 font-body text-sm bg-white border border-gray-100">
             No {title.toLowerCase()}s yet.
+          </div>
+        )}
+      </div>
+      <Pager page={page} data={data} setPage={setPage} />
+    </section>
+  );
+}
+
+function SubcategoryAdmin({ onBack }) {
+  const { data, page, setPage, reload } = usePagedResource('/subcategories/');
+  const [parentOptions, setParentOptions] = useState([]);
+  const [form, setForm]       = useState({ name: '', name_ta: '', slug: '', parent: '', sort_order: 0, is_active: true });
+  const [editing, setEditing] = useState(null);
+  const [slugManual, setSlugManual] = useState(false);
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    apiFetch('/product-categories/?page_size=1000')
+      .then(payload => {
+        if (!mounted) return;
+        const items = (payload?.results || payload || []).map(c => ({ id: c.id, name: c.name, slug: c.slug }));
+        setParentOptions(items);
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  const handleNameChange = (val) => {
+    setForm(f => ({ ...f, name: val, ...(slugManual ? {} : { slug: slugify(val) }) }));
+  };
+
+  const cancel = () => {
+    setEditing(null);
+    setSlugManual(false);
+    setError('');
+    setForm({ name: '', name_ta: '', slug: '', parent: '', sort_order: 0, is_active: true });
+  };
+
+  const edit = (item) => {
+    setEditing(item);
+    setSlugManual(true);
+    setForm({
+      name: item.name || '',
+      name_ta: item.name_ta || '',
+      slug: item.slug || '',
+      parent: item.parent || '',
+      sort_order: item.sort_order || 0,
+      is_active: item.is_active,
+    });
+  };
+
+  const save = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!form.parent) {
+      setError('Please select a parent category.');
+      notifyAdmin('Please select a parent category.', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const resolvedSlug = editing
+        ? form.slug
+        : await ensureUniqueSlug(form.slug || form.name, '/subcategories/', editing?.slug);
+      if (!editing && resolvedSlug !== form.slug) {
+        setForm(f => ({ ...f, slug: resolvedSlug }));
+      }
+      const payload = {
+        name: form.name,
+        name_ta: form.name_ta,
+        slug: resolvedSlug,
+        parent: Number(form.parent),
+        sort_order: Number(form.sort_order || 0),
+        is_active: form.is_active,
+      };
+      await apiFetch(editing ? `/subcategories/${editing.slug}/` : '/subcategories/', {
+        method: editing ? 'PATCH' : 'POST',
+        body: JSON.stringify(payload),
+      });
+      notifyAdmin(editing ? 'Subcategory updated successfully.' : 'Subcategory created successfully.');
+      cancel();
+      reload();
+    } catch (err) {
+      setError(err.message);
+      notifyAdmin(err.message || 'Unable to save subcategory.', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="space-y-5">
+      <button type="button" onClick={onBack} className="btn-outline text-xs px-3 py-2 inline-flex items-center gap-1 self-start">
+        <ChevronLeft size={14} /> Categories
+      </button>
+
+      <div className="bg-white border border-gray-100 overflow-hidden">
+        <div className={`px-5 py-3 border-b border-gray-100 flex items-center justify-between ${editing ? 'bg-amber-50' : 'bg-dillo-cream'}`}>
+          <h3 className="font-body text-sm font-bold text-dillo-charcoal">
+            {editing ? `Editing: ${editing.name}` : 'Add new subcategory'}
+          </h3>
+          {editing && (
+            <button type="button" onClick={cancel} className="font-body text-xs text-gray-500 hover:text-dillo-red flex items-center gap-1">
+              <X size={13} /> Cancel editing
+            </button>
+          )}
+        </div>
+        <form onSubmit={save} className="p-5 space-y-3">
+          {error && <p className="font-body text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">{error}</p>}
+          <div className="grid md:grid-cols-5 gap-3">
+            <div>
+              <FieldLabel required>Subcategory name</FieldLabel>
+              <input className="input-field w-full" placeholder="Subcategory name"
+                value={form.name} onChange={e => handleNameChange(e.target.value)} required />
+            </div>
+            <div>
+              <FieldLabel>Tamil name</FieldLabel>
+              <input className="input-field w-full" placeholder="தமிழ் பெயர்"
+                value={form.name_ta} onChange={e => setForm(f => ({ ...f, name_ta: e.target.value }))} />
+            </div>
+            <div>
+              <FieldLabel hint="Auto-generated">Slug</FieldLabel>
+              <input className="input-field w-full" placeholder="slug"
+                value={form.slug}
+                onChange={e => { setSlugManual(true); setForm(f => ({ ...f, slug: e.target.value })); }}
+                required />
+            </div>
+            <div>
+              <FieldLabel required>Parent Category</FieldLabel>
+              <select className="input-field w-full" value={form.parent}
+                onChange={e => setForm(f => ({ ...f, parent: e.target.value }))} required>
+                <option value="">— Select —</option>
+                {parentOptions.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end gap-2">
+              <label className="h-10 flex items-center gap-2 border border-gray-200 bg-white px-3 font-body text-xs text-gray-600">
+                <input type="checkbox" checked={form.is_active} onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
+                Active
+              </label>
+              <button className="btn-primary h-10 px-4 flex items-center justify-center gap-2" disabled={saving}>
+                {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
+                {editing ? 'Update' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {data.results.map(item => (
+          <div key={item.id}
+            className={`bg-white border p-4 flex items-center justify-between hover:border-gray-300 transition-colors cursor-default ${editing?.id === item.id ? 'border-amber-300 bg-amber-50' : 'border-gray-100'}`}>
+            <div>
+              <p className="font-body font-semibold text-dillo-charcoal">{item.name}</p>
+              {item.name_ta && <p className="font-body text-xs text-dillo-gold">{item.name_ta}</p>}
+              <p className="font-body text-xs text-gray-400 mt-0.5">
+                {item.slug} · under {item.parent_name || parentOptions.find(p => p.id === item.parent)?.name || '—'}
+              </p>
+            </div>
+            <button onClick={() => editing?.id === item.id ? cancel() : edit(item)}
+              className={`p-2 transition-colors ${editing?.id === item.id ? 'text-amber-600' : 'text-dillo-charcoal hover:text-dillo-red'}`}>
+              {editing?.id === item.id ? <X size={16} /> : <Edit size={16} />}
+            </button>
+          </div>
+        ))}
+        {data.results.length === 0 && (
+          <div className="md:col-span-2 xl:col-span-3 py-10 text-center text-gray-400 font-body text-sm bg-white border border-gray-100">
+            No subcategories yet.
           </div>
         )}
       </div>
@@ -1586,10 +1921,12 @@ function OptionTableAdmin({ title, path, mode = 'name', onBack }) {
         method: editing ? 'PATCH' : 'POST',
         body: JSON.stringify(payload),
       });
+      notifyAdmin(`${title} ${editing ? 'updated' : 'created'} successfully.`);
       cancel();
       reload();
     } catch (err) {
       setError(err.message);
+      notifyAdmin(err.message || `Unable to save ${title.toLowerCase()}.`, 'error');
     } finally {
       setSaving(false);
     }
@@ -1741,9 +2078,11 @@ function OrdersAdmin() {
   const updateStatus = async (order, nextStatus) => {
     try {
       await apiFetch(`/orders/${order.id}/`, { method: 'PATCH', body: JSON.stringify({ status: nextStatus }) });
+      notifyAdmin(`Order marked as ${nextStatus}.`);
       reload();
     } catch (err) {
       console.error(err);
+      notifyAdmin(err.message || 'Unable to update order status.', 'error');
     }
   };
 
@@ -1933,6 +2272,7 @@ function VideoShoppingAdmin() {
 
     if (nextStatus === 'completed' && !attendeeName) {
       setError('Enter attendee name before marking a video shopping session completed.');
+      notifyAdmin('Enter attendee name before marking completed.', 'error');
       return;
     }
 
@@ -1946,9 +2286,11 @@ function VideoShoppingAdmin() {
           attendee_name: attendeeName,
         }),
       });
+      notifyAdmin('Video shopping booking updated successfully.');
       reload();
     } catch (err) {
       setError(err.message || 'Unable to update video shopping booking.');
+      notifyAdmin(err.message || 'Unable to update video shopping booking.', 'error');
     } finally {
       setSavingId(null);
     }
@@ -2247,7 +2589,7 @@ export default function AdminDashboardPage() {
   const primaryTabId = getPrimaryTabId(activeTab);
   const headingTab = tabs.find(t => t.id === primaryTabId);
   const HeadingIcon = headingTab?.icon || LayoutDashboard;
-  const headingLabel = productInnerPages[activeTab] || headingTab?.label;
+  const headingLabel = productInnerPages[activeTab] || extraPageLabels[activeTab] || headingTab?.label;
 
   if (loading) return (
     <div className="min-h-screen bg-dillo-ivory flex items-center justify-center">
@@ -2271,6 +2613,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-dillo-ivory">
+      <AdminToastHost />
       {/* Header */}
       <div className="bg-dillo-charcoal text-white sticky top-0 z-40 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
@@ -2342,9 +2685,19 @@ export default function AdminDashboardPage() {
             onStockFilterChange={setProductStockFilter}
           />
         )}
-        {activeTab === 'categories'  && <SimpleTaxonomyAdmin title="Category" path="/saree-categories/" hasTamil />}
+       {activeTab === 'categories'    && (
+          <SimpleTaxonomyAdmin
+            title="Category"
+            path="/product-categories/"
+            hasTamil
+            onManageSubcategories={() => handleTabChange('subcategories')}
+          />
+        )}
         {activeTab === 'product-names' && <OptionTableAdmin title="Product Name" path="/product-name-options/" onBack={() => handleTabChange('products')} />}
-        {activeTab === 'saree-types' && <OptionTableAdmin title="Saree Type" path="/saree-type-options/" onBack={() => handleTabChange('products')} />}
+        {activeTab === 'subcategories' && (
+          <SubcategoryAdmin onBack={() => handleTabChange('categories')} />
+        )}
+        {activeTab === 'saree-types' && <OptionTableAdmin title="Product Type" path="/product-type-options/" onBack={() => handleTabChange('products')} />}
         {activeTab === 'product-info' && <OptionTableAdmin title="Product Info" path="/product-info-options/" mode="info" onBack={() => handleTabChange('products')} />}
         {activeTab === 'occasions'   && <SimpleTaxonomyAdmin title="Occasion" path="/occasion-categories/" />}
         {activeTab === 'orders'      && <OrdersAdmin />}

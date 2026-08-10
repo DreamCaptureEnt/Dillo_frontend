@@ -92,10 +92,10 @@ function useHomeProducts() {
     let mounted = true;
 
     Promise.all([
-      apiFetch(`/sarees/${toQuery({ page_size: 8, featured: true })}`),
-      apiFetch(`/sarees/${toQuery({ page_size: 4, bestseller: true })}`),
-      apiFetch(`/sarees/${toQuery({ page_size: 4, new: true, ordering: '-created_at' })}`),
-      apiFetch('/saree-categories/?page_size=100'),
+      apiFetch(`/products/${toQuery({ page_size: 8, featured: true })}`),
+      apiFetch(`/products/${toQuery({ page_size: 4, bestseller: true })}`),
+      apiFetch(`/products/${toQuery({ page_size: 4, new: true, ordering: '-created_at' })}`),
+      apiFetch('/product-categories/?page_size=100'),
     ])
       .then(([featuredPayload, bestsellerPayload, newPayload, categoryPayload]) => {
         if (!mounted) return;

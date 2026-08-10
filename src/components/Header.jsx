@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   ShoppingCart, Heart, Search, Menu, X, ChevronDown,
@@ -8,6 +8,15 @@ import DilloLogo from './../assets/Logo.png';
 import { useCart } from '../pages/CartContext';
 import { announcements } from '../products.js';
 import { apiFetch } from '../api';
+
+function getResults(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (payload && typeof payload === 'object') return payload.results ?? payload.data ?? [];
+  return [];
+}
+
+const norm = (value) => (value || '').toString().trim().toLowerCase();
+const slugify = (value) => norm(value).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 function SocialBrandIcon({ platform, size = 14 }) {
   const normalized = platform?.toLowerCase();
@@ -58,11 +67,9 @@ export default function Header() {
   const [scrolled, setScrolled]       = useState(false);
   const [activeMenu, setActiveMenu]   = useState(null);
   const [mobileSubmenu, setMobileSubmenu] = useState(null);
-  const [menuData, setMenuData]       = useState({
-    categories: [],
-    types: [],
-    occasions: [],
-  });
+  const [productTypes, setProductTypes] = useState([]);
+  const [occasions, setOccasions] = useState([]);
+  const [productCategories, setProductCategories] = useState([]);
   const navigate  = useNavigate();
   const location  = useLocation();
   const searchRef = useRef(null);
@@ -84,29 +91,52 @@ export default function Header() {
   }, [searchOpen]);
 
   useEffect(() => {
-    let mounted = true;
-    Promise.all([
-      apiFetch('/saree-categories/?page_size=100&is_active=true'),
-      apiFetch('/saree-type-options/?page_size=100&is_active=true'),
-      apiFetch('/occasion-categories/?page_size=100&is_active=true'),
-    ])
-      .then(([categoryPayload, typePayload, occasionPayload]) => {
-        if (!mounted) return;
-        const getResults = payload => Array.isArray(payload) ? payload : payload?.results || [];
-        setMenuData({
-          categories: getResults(categoryPayload).filter(item => item.is_active ?? true),
-          types: getResults(typePayload).filter(item => item.is_active ?? true),
-          occasions: getResults(occasionPayload).filter(item => item.is_active ?? true),
-        });
-      })
-      .catch(console.error);
-    return () => { mounted = false; };
-  }, []);
-
-  useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      apiFetch('/product-categories/?page_size=200'),
+      apiFetch('/subcategories/?page_size=200'),
+      apiFetch('/product-type-options/?page_size=100&is_active=true'),
+      apiFetch('/occasion-categories/?page_size=100'),
+    ])
+      .then(([categoryPayload, subcategoryPayload, typePayload, occasionPayload]) => {
+        if (!mounted) return;
+        const parentCats = getResults(categoryPayload)
+          .filter(c => c.is_active ?? true)
+          .map(c => ({
+            id: c.slug || String(c.id),
+            name: c.name,
+            slug: norm(c.slug || String(c.id)),
+            parent_slug: norm(c.parent_slug || ''),
+          }));
+        const subcats = getResults(subcategoryPayload)
+          .filter(s => s.is_active ?? true)
+          .map(s => ({
+            id: s.slug || String(s.id),
+            name: s.name,
+            slug: norm(s.slug || String(s.id)),
+            parent_slug: norm(s.parent_slug || ''),
+          }));
+
+        // combine parents and subcategories so submenuFromCategory can find children by parent_slug
+        const cats = [...parentCats, ...subcats];
+        setProductCategories(cats);
+        setProductTypes(getResults(typePayload)
+          .filter(item => item.is_active ?? true)
+          .map(item => ({ id: item.slug || String(item.id), name: item.name, slug: item.slug })));
+        setOccasions(getResults(occasionPayload)
+          .filter(item => item.is_active ?? true)
+          .map(item => ({ id: item.slug || String(item.id), name: item.name, slug: item.slug })));
+      })
+      .catch(err => {
+        console.error('Header nav load failed', err);
+      });
+    return () => { mounted = false; };
+  }, []);
 
   // Close mobile menu on resize to desktop
   useEffect(() => {
@@ -128,109 +158,139 @@ export default function Header() {
     }
   };
 
-  const sareesCategory = menuData.categories.find(item => (item.slug || '').toLowerCase() === 'sarees');
-  const defaultCategory = sareesCategory?.slug || menuData.categories[0]?.slug || 'sarees';
-  const categoryLinks = menuData.categories.length
-    ? menuData.categories.map(item => ({
-        label: item.name,
-        href: `/products?category=${encodeURIComponent(item.slug || item.name)}`,
-      }))
-    : [
-        { label: 'Sarees', href: '/products?category=sarees' },
-        { label: 'Readymade', href: '/products?category=readymade' },
-      ];
-  const typeLinks = menuData.types.length
-    ? menuData.types.map(item => ({
-        label: item.name,
-        href: `/products?category=${encodeURIComponent(defaultCategory)}&type=${encodeURIComponent(item.name)}`,
-      }))
-    : [
-        { label: 'Kanjivaram Silk', href: '/products?category=sarees&type=Kanjivaram' },
-        { label: 'Banarasi Silk', href: '/products?category=sarees&type=Banarasi' },
-        { label: 'Chanderi', href: '/products?category=sarees&type=Chanderi' },
-        { label: 'Mysore Silk', href: '/products?category=sarees&type=Mysore+Silk' },
-        { label: 'Dharmavaram', href: '/products?category=sarees&type=Dharmavaram' },
-        { label: 'Patola', href: '/products?category=sarees&type=Patola' },
-      ];
-  const occasionLinks = menuData.occasions.length
-    ? menuData.occasions.map(item => ({
-        label: `${item.name} Sarees`,
-        href: `/products?category=${encodeURIComponent(defaultCategory)}&occasion=${encodeURIComponent(item.slug || item.name)}`,
-      }))
-    : [
-        { label: 'Bridal Sarees', href: '/products?category=sarees&occasion=Wedding' },
-        { label: 'Festival Sarees', href: '/products?category=sarees&occasion=Festival' },
-        { label: 'Party Wear', href: '/products?category=sarees&occasion=Party' },
-        { label: 'Casual Sarees', href: '/products?category=sarees&occasion=Casual' },
+  const navItems = useMemo(() => {
+    const occasionLinks = occasions.slice(0, 8).map(occasion => ({
+      label: occasion.name,
+      value: occasion.slug || occasion.id || occasion.name,
+      href: `/products?occasion=${encodeURIComponent(occasion.slug || occasion.id || occasion.name)}`,
+    }));
+
+    const resolveCategorySlug = (candidates, fallback) => {
+      const wanted = candidates.map(slugify).filter(Boolean);
+      const match = (productCategories || []).find(c =>
+        !c.parent_slug &&
+        (wanted.includes(slugify(c.name)) || wanted.includes(slugify(c.slug)))
+      );
+      return norm(match?.slug || fallback);
+    };
+
+    const navCategoryHref = (value) =>
+      `/products?category=${encodeURIComponent(value)}`;
+
+    const productsHref = (params) =>
+      `/products?${new URLSearchParams(params).toString()}`;
+
+    const sareesSlug = resolveCategorySlug(['Sarees', 'Saree'], 'sarees');
+    const womensSlug = resolveCategorySlug(['Womens', 'Women', 'Ladies'], 'womens');
+    const mensSlug = resolveCategorySlug(['Mens', 'Men'], 'mens');
+    const kidsSlug = resolveCategorySlug(['Kids', 'Boys', 'Girls'], 'kids');
+    const bornBabySlug = resolveCategorySlug(['Born Baby', 'Born Babys'], 'born-baby');
+
+    // map product categories by parent slug for category-specific submenus
+    const categoriesByParent = (productCategories || []).reduce((acc, c) => {
+      if (!c.parent_slug) return acc;
+      const key = norm(c.parent_slug);
+      acc[key] = acc[key] || [];
+      acc[key].push(c);
+      return acc;
+    }, {});
+
+    // Build a submenu for a top-level category: its real subcategories
+    // under "Category", and the full occasions list under "Occasions".
+    // Never falls back to unrelated saree-type data.
+    const buildSubmenu = (parentSlug, fallbackLabel, categoryValue = fallbackLabel) => {
+      const children = categoriesByParent[parentSlug] || [];
+      const scopedOccasionLinks = occasionLinks.map(link => ({
+        ...link,
+        href: productsHref({
+          category: categoryValue,
+          occasion: link.value,
+        }),
+      }));
+      const categoryLinks = children.length
+        ? children.slice(0, 8).map(ch => ({
+            label: ch.name,
+            href: `/products?category=${encodeURIComponent(ch.name || ch.slug)}`,
+          }))
+        : [{ label: `All ${fallbackLabel}`, href: navCategoryHref(categoryValue) }];
+
+      const shopLinks = [
+        { label: 'New Arrivals', href: productsHref({ category: categoryValue, filter: 'new' }), badge: 'New' },
+        { label: 'Best Sellers', href: productsHref({ category: categoryValue, filter: 'bestseller' }) },
+        { label: 'Trending Now', href: productsHref({ category: categoryValue, tag: 'trending-now' }) },
       ];
 
-  const navItems = [
-    {
-      label: 'Sarees',
-      labelTa: 'சேலைகள்',
-      href: `/products?category=${encodeURIComponent(defaultCategory)}`,
-      submenu: [
+      return [
         {
-          heading: 'By Category',
+          heading: 'Category',
           links: categoryLinks,
         },
         {
-          heading: 'By Type',
-          links: typeLinks,
-        },
-        {
-          heading: 'By Occasion',
-          links: occasionLinks,
+          heading: 'Occasions',
+          links: scopedOccasionLinks.length
+            ? scopedOccasionLinks
+            : [{ label: 'All Occasions', href: navCategoryHref(categoryValue) }],
         },
         {
           heading: 'Shop',
-          links: [
-            { label: 'Trending Now', href: '/new-arrivals',              badge: 'New' },
-            { label: 'Best Sellers', href: '/products?filter=bestseller' },
-            { label: 'Sale',         href: '/cost-to-cost',              badge: 'Sale' },
-            { label: 'All Sarees',   href: `/products?category=${encodeURIComponent(defaultCategory)}` },
-          ],
+          links: shopLinks,
         },
-      ],
-    },
-    {
-      label: 'Trending Now',
-      labelTa: 'புதிய வரவுகள்',
-      href: '/new-arrivals',
-    },
-    {
-      label: 'Youtube/ insta',
-      labelTa: 'நேரலை நிகழ்ச்சி',
-      href: '/live-show',
-      submenu: [
-        {
-          heading: 'Platforms',
-          links: [
-            { label: 'YouTube',   href: '/live-show#youtube',   platform: 'youtube' },
-            { label: 'Instagram', href: '/live-show#instagram', platform: 'instagram' },
-          ],
-        },
-      ],
-    },
-    // {
-    //   label: 'Cost to Cost Sale',
-    //   labelTa: 'விலை குறைப்பு',
-    //   href: '/cost-to-cost',
-    //   highlight: true,
-    // },
-    {
-      label: 'About Us',
-      labelTa: 'எங்களைப் பற்றி',
-      href: '/about',
-    },
-    {
-      label: 'Video Shopping',
-      labelTa: 'வீடியோ வாங்கல்',
-      href: '/video-shopping',
-    },
-  ];
-  const activeDesktopItem = navItems.find(item => item.label === activeMenu);
+      ];
+    };
 
+    return [
+      {
+        label: 'New Arrivals',
+        labelTa: 'புதிய வரவுகள்',
+        href: '/products?filter=new',
+      },
+      {
+        label: 'Sarees',
+        labelTa: 'சேலைகள்',
+        href: navCategoryHref('Sarees'),
+        submenu: buildSubmenu(sareesSlug, 'Sarees', 'Sarees'),
+      },
+      {
+        label: 'Womens',
+        labelTa: 'பெண்கள்',
+        href: navCategoryHref('Ladies'),
+        submenu: buildSubmenu(womensSlug, 'Womens', 'Ladies'),
+      },
+      {
+        label: 'Mens',
+        labelTa: 'ஆண்கள்',
+        href: navCategoryHref('Mens'),
+        submenu: buildSubmenu(mensSlug, 'Mens', 'Mens'),
+      },
+      {
+        label: 'Kids',
+        labelTa: 'குழந்தைகள்',
+        href: navCategoryHref('Kids'),
+        submenu: buildSubmenu(kidsSlug, 'Kids', 'Kids'),
+      },
+      {
+        label: 'Born Baby',
+        labelTa: 'பிறந்த குழந்தை',
+        href: navCategoryHref('Born Babys'),
+        submenu: buildSubmenu(bornBabySlug, 'Born Baby', 'Born Babys'),
+      },
+      {
+        label: 'Trending Now',
+        labelTa: 'பிரபலமானவை',
+        href: '/products?tag=trending-now',
+      },
+      {
+        label: 'About Us',
+        labelTa: 'எங்களைப் பற்றி',
+        href: '/about',
+      },
+      {
+        label: 'Video Shopping',
+        labelTa: 'வீடியோ வாங்கல்',
+        href: '/video-shopping',
+      },
+    ];
+  }, [occasions, productCategories]);
   return (
     <>
       {/* ── Announcement Ticker ─────────────────────────────── */}
@@ -376,8 +436,9 @@ export default function Header() {
               {navItems.map((item) => (
                 <div
                   key={item.label}
-                  className="relative group"
+                  className="relative py-2"
                   onMouseEnter={() => setActiveMenu(item.label)}
+                  onMouseLeave={() => setActiveMenu(null)}
                 >
                   <Link
                     to={item.href}
@@ -397,9 +458,47 @@ export default function Header() {
                     )}
                     {item.submenu && (
                       <ChevronDown size={13}
-                        className="opacity-60 group-hover:rotate-180 transition-transform duration-200 flex-shrink-0" />
+                        className={`opacity-60 transition-transform duration-200 flex-shrink-0 ${activeMenu === item.label ? 'rotate-180' : ''}`}
+                      />
                     )}
                   </Link>
+
+                  {item.submenu && activeMenu === item.label && (
+                    <div
+                      className="absolute left-1/2 top-full z-[110] w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 bg-white rounded-xl shadow-lg shadow-dillo-charcoal/10 border border-gray-100 ring-1 ring-black/[0.03] overflow-hidden"
+                    >
+                      <div className="h-[3px] bg-dillo-red" />
+                      <div
+                        className="grid gap-x-6 gap-y-5 p-5"
+                        style={{ gridTemplateColumns: `repeat(${Math.min(item.submenu.length, 3)}, minmax(180px, 1fr))` }}
+                      >
+                        {item.submenu.map((group) => (
+                          <div key={group.heading} className="min-w-0">
+                            <p className="text-[10.5px] font-cinzel font-semibold tracking-wider text-dillo-gold uppercase mb-1.5 pb-1.5 border-b border-gray-100">
+                              {group.heading}
+                            </p>
+                            <ul className="space-y-1 max-h-64 overflow-y-auto overflow-x-hidden pr-1.5 text-sm">
+                              {group.links.map((link) => (
+                                <li key={link.label}>
+                                  <Link to={link.href}
+                                    className="flex items-start gap-1.5 rounded-md px-2 py-2 -mx-2 text-dillo-charcoal hover:bg-dillo-cream hover:text-dillo-red transition-colors duration-150"
+                                  >
+                                    {link.platform && <SocialBrandIcon platform={link.platform} size={13} />}
+                                    <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">{link.label}</span>
+                                    {link.badge && (
+                                      <span className="ml-auto mt-0.5 flex-shrink-0 text-[9px] bg-dillo-red text-white px-1.5 py-0.5 rounded font-bold leading-none">
+                                        {link.badge}
+                                      </span>
+                                    )}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </nav>
@@ -454,7 +553,7 @@ export default function Header() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search sarees, fabric, readymade..."
+                  placeholder="Search products, categories, collections..."
                   className="flex-1 input-field border-dillo-red/30"
                 />
                 <button type="submit" className="btn-primary px-3 py-2 flex-shrink-0">
@@ -472,97 +571,6 @@ export default function Header() {
             </div>
           )}
 
-          {activeDesktopItem?.submenu && (() => {
-            /* Width & column count both derive from how many groups this
-               particular item actually has (1 for "Youtube/ insta", 4 for
-               "Sarees") instead of a single fixed size for every menu —
-               that's what made a 1-group menu look like an oversized,
-               half-empty box. Capped at 4 columns / ~640px so it never
-               sprawls even on very wide desktops. */
-            const groupCount = Math.min(activeDesktopItem.submenu.length, 4);
-            const colWidth = 168; // px per column, compact but readable
-            const menuWidth = groupCount * colWidth + (groupCount - 1) * 24 + 32; // cols + gaps + padding
-
-            return (
-              <div
-                className="hidden xl:block absolute top-full left-1/2 -translate-x-1/2 mt-1.5
-                  bg-white rounded-xl shadow-lg shadow-dillo-charcoal/10 border border-gray-100
-                  ring-1 ring-black/[0.03] animate-mega-menu z-[110] overflow-hidden"
-                style={{ width: `min(${menuWidth}px, calc(100vw - 2rem))` }}
-                onMouseEnter={() => setActiveMenu(activeDesktopItem.label)}
-              >
-                <div className="h-[3px] bg-dillo-red" />
-                <div
-                  className="grid gap-x-6 gap-y-4 p-4"
-                  style={{ gridTemplateColumns: `repeat(${groupCount}, minmax(0, 1fr))` }}
-                >
-                  {activeDesktopItem.submenu.map((group) => (
-                    <div key={group.heading} className="min-w-0">
-                      <p className="text-[10.5px] font-cinzel font-semibold tracking-wider
-                        text-dillo-gold uppercase mb-1.5 pb-1.5 border-b border-gray-100">
-                        {group.heading}
-                      </p>
-                      {/*
-                        SCROLLBAR FIX:
-                        The site's global scrollbar CSS (thick, brand-red
-                        thumb — meant for the main page scroll) was being
-                        inherited by this inner list the moment it
-                        overflowed, so a column with a few extra links
-                        would sprout a scrollbar almost as wide as the
-                        column itself — the "huge red bar" in the column.
-
-                        Fix, scoped to just this list so it never touches
-                        the global scrollbar elsewhere on the site:
-                          - overflow-y-auto + overflow-x-hidden: this list
-                            only ever scrolls vertically. Horizontal
-                            overflow is prevented at the source (truncate
-                            on the link label) rather than scrolled.
-                          - [&::-webkit-scrollbar]:w-1 and friends: a
-                            hairline 4px thumb instead of the global
-                            thick/red one, only rendered by the browser
-                            when content actually exceeds max-h (native
-                            `auto` behavior — no JS needed to detect
-                            overflow).
-                          - scrollbarWidth/scrollbarColor: same thin,
-                            neutral treatment on Firefox, which ignores
-                            the ::-webkit-scrollbar rules.
-                          - pr-1.5: keeps the thumb from sitting flush
-                            against link text when it does appear.
-                      */}
-                      <ul
-                        className="space-y-0.5 max-h-56 overflow-y-auto overflow-x-hidden pr-1.5
-                          [&::-webkit-scrollbar]:w-1
-                          [&::-webkit-scrollbar-track]:bg-transparent
-                          [&::-webkit-scrollbar-thumb]:bg-gray-300
-                          [&::-webkit-scrollbar-thumb]:rounded-full
-                          hover:[&::-webkit-scrollbar-thumb]:bg-gray-400"
-                        style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}
-                      >
-                        {group.links.map((link) => (
-                          <li key={link.label}>
-                            <Link to={link.href}
-                              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 -mx-2 text-[13px]
-                                font-body text-dillo-charcoal hover:bg-dillo-cream hover:text-dillo-red
-                                transition-colors duration-150">
-                              {link.platform && <SocialBrandIcon platform={link.platform} size={13} />}
-                              <span className="truncate">{link.label}</span>
-                              {link.badge && (
-                                <span className="ml-auto flex-shrink-0 text-[9px] bg-dillo-red text-white
-                                  px-1.5 py-0.5 rounded font-bold leading-none">
-                                  {link.badge}
-                                </span>
-                              )}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
 
         {/* ══════════════════════════════════════════════════════
             MOBILE DRAWER  (< xl)
@@ -709,7 +717,9 @@ export default function Header() {
 
           </div>
         )}
+        </div>
       </header>
+      
       <div className="h-16 xl:h-32 2xl:h-36" aria-hidden="true" />
     </>
   );

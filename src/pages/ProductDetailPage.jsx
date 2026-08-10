@@ -807,7 +807,7 @@ function RelatedProducts({ product }) {
       ? { page_size: 8, category: product.category }
       : { page_size: 8 };
 
-    apiFetch(`/sarees/${toQuery(q)}`)
+    apiFetch(`/products/${toQuery(q)}`)
       .then(payload => {
         if (!mounted) return;
         setRelated(
@@ -863,13 +863,13 @@ export default function ProductDetailPage() {
     setError('');
     window.scrollTo(0, 0);
 
-    apiFetch(`/sarees/${id}/`)
+    apiFetch(`/products/${id}/`)
       .then(data => {
         if (mounted) setProduct(normalizeProduct(data));
       })
       .catch(async err => {
         try {
-          const payload = await apiFetch('/sarees/?page_size=200');
+          const payload = await apiFetch('/products/?page_size=200');
           const match = getResults(payload).find(
             item =>
               String(item.id) === String(id) ||

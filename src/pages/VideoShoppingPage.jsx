@@ -106,32 +106,22 @@ export default function VideoShoppingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f5]">
+    <div className="min-h-screen bg-dillo-ivory font-body">
       {/* ── Hero ── */}
       <div
         className="relative overflow-hidden bg-dillo-charcoal text-white"
-        style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%)" }}
       >
-        <div className="absolute inset-0 opacity-10">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 20% 50%, rgba(255,200,100,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(200,100,255,0.2) 0%, transparent 50%)",
-            }}
-          />
-        </div>
-        <div className="relative container mx-auto px-4 py-16 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-6">
+        <div className="relative container mx-auto px-4 py-12 sm:py-14 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-sm px-4 py-2 mb-5">
             <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
             </span>
             <span className="text-sm font-body text-white/90 tracking-wide">Live Slots Available</span>
           </div>
-          <h1 className="font-display text-4xl md:text-5xl font-bold mb-4 leading-tight">
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-4 leading-tight">
             Shop Sarees
-            <span className="block text-amber-300 italic font-light mt-1">Over Video Call</span>
+            <span className="block text-amber-300 font-bold mt-1">Over Video Call</span>
           </h1>
           <p className="font-body text-white/70 text-lg max-w-xl mx-auto mb-2">
             Browse our full collection with a personal stylist — live, from the comfort of your home.
@@ -143,9 +133,9 @@ export default function VideoShoppingPage() {
       </div>
 
       {/* ── Booking Card ── */}
-      <div className="container mx-auto px-4 py-12 max-w-2xl">
+      <div className="container mx-auto px-4 py-8 sm:py-10 max-w-2xl">
         {/* Progress */}
-        <div className="flex items-center justify-between mb-10 relative">
+        <div className="flex items-center justify-between mb-8 relative">
           <div className="absolute left-0 right-0 top-4 h-0.5 bg-gray-200 -z-0" />
           {STEPS.map((s, i) => (
             <div key={s} className="flex flex-col items-center gap-2 relative z-10">
@@ -171,7 +161,7 @@ export default function VideoShoppingPage() {
           ))}
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-sm shadow-sm border border-gray-100 overflow-hidden">
           {/* ── Step 0: Pick Date ── */}
           {step === 0 && (
             <div className="p-8">
@@ -182,17 +172,17 @@ export default function VideoShoppingPage() {
                 min={getMinDate()}
                 value={date}
                 onChange={(e) => { setDate(e.target.value); setError(""); }}
-                className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-2xl px-4 py-3 font-body text-dillo-charcoal outline-none transition-all text-base cursor-pointer"
+                className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-sm px-4 py-3 font-body text-dillo-charcoal outline-none transition-all text-base cursor-pointer"
               />
               {date && (
-                <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl p-3 font-body text-sm text-amber-800">
+                <div className="mt-3 bg-amber-50 border border-amber-100 rounded-sm p-3 font-body text-sm text-amber-800">
                   📅 {formatDate(date)}
                 </div>
               )}
               {error && <p className="mt-3 text-red-500 font-body text-sm">{error}</p>}
               <button
                 onClick={handleDateNext}
-                className="btn-primary mt-6 w-full py-3 rounded-2xl font-body font-semibold text-base"
+                className="btn-primary mt-6 w-full py-3 rounded-sm font-body font-semibold text-base"
               >
                 Continue →
               </button>
@@ -217,7 +207,7 @@ export default function VideoShoppingPage() {
                       key={s.value}
                       disabled={booked}
                       onClick={() => { setSlot(s); setError(""); }}
-                      className={`py-2.5 rounded-xl text-sm font-body font-medium border-2 transition-all duration-150 ${
+                      className={`py-2.5 rounded-sm text-sm font-body font-medium border-2 transition-all duration-150 ${
                         booked
                           ? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed line-through"
                           : selected
@@ -246,7 +236,7 @@ export default function VideoShoppingPage() {
               {error && <p className="mt-3 text-red-500 font-body text-sm">{error}</p>}
               <button
                 onClick={handleSlotNext}
-                className="btn-primary mt-6 w-full py-3 rounded-2xl font-body font-semibold text-base"
+                className="btn-primary mt-6 w-full py-3 rounded-sm font-body font-semibold text-base"
               >
                 Continue →
               </button>
@@ -273,7 +263,7 @@ export default function VideoShoppingPage() {
                     placeholder="Meena Krishnamurthy"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-xl px-4 py-3 font-body text-sm outline-none transition-all"
+                    className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-sm px-4 py-3 font-body text-sm outline-none transition-all"
                   />
                 </div>
                 <div>
@@ -284,7 +274,7 @@ export default function VideoShoppingPage() {
                     placeholder="meena@gmail.com"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-xl px-4 py-3 font-body text-sm outline-none transition-all"
+                    className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-sm px-4 py-3 font-body text-sm outline-none transition-all"
                   />
                   <p className="text-xs text-gray-400 font-body mt-1">Your Google Meet link will be sent here</p>
                 </div>
@@ -295,7 +285,7 @@ export default function VideoShoppingPage() {
                     placeholder="+91 98765 43210"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-xl px-4 py-3 font-body text-sm outline-none transition-all"
+                    className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-sm px-4 py-3 font-body text-sm outline-none transition-all"
                   />
                 </div>
                 <div>
@@ -305,12 +295,12 @@ export default function VideoShoppingPage() {
                     placeholder="e.g. Silk sarees for a wedding, or something for daily wear under ₹3000…"
                     value={form.note}
                     onChange={(e) => setForm({ ...form, note: e.target.value })}
-                    className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-xl px-4 py-3 font-body text-sm outline-none transition-all resize-none"
+                    className="w-full border-2 border-gray-200 focus:border-dillo-charcoal rounded-sm px-4 py-3 font-body text-sm outline-none transition-all resize-none"
                   />
                 </div>
               </div>
 
-              <div className="mt-5 bg-gray-50 border border-gray-100 rounded-2xl p-4 font-body text-sm">
+              <div className="mt-5 bg-gray-50 border border-gray-100 rounded-sm p-4 font-body text-sm">
                 <p className="text-gray-500 text-xs uppercase tracking-wide mb-2">Your Booking Summary</p>
                 <div className="flex items-center gap-3 text-dillo-charcoal">
                   <span className="text-xl">📅</span>
@@ -326,7 +316,7 @@ export default function VideoShoppingPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary mt-6 w-full py-3 rounded-2xl font-body font-semibold text-base disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="btn-primary mt-6 w-full py-3 rounded-sm font-body font-semibold text-base disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -355,7 +345,7 @@ export default function VideoShoppingPage() {
                 Check your inbox (and spam folder just in case).
               </p>
 
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 text-left font-body text-sm space-y-3 mb-6">
+              <div className="bg-gray-50 border border-gray-100 rounded-sm p-5 text-left font-body text-sm space-y-3 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Date</span>
                   <span className="font-semibold text-dillo-charcoal">{formatDate(booking.date)}</span>
@@ -387,7 +377,7 @@ export default function VideoShoppingPage() {
                 )}
               </div>
 
-              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm font-body text-amber-800 text-left mb-6">
+              <div className="bg-amber-50 border border-amber-100 rounded-sm p-4 text-sm font-body text-amber-800 text-left mb-6">
                 <p className="font-semibold mb-1">What happens next?</p>
                 <p>Our stylist will join you on Google Meet at the scheduled time. Have any specific saree styles, colours, or occasions in mind ready to share!</p>
               </div>
@@ -420,7 +410,7 @@ export default function VideoShoppingPage() {
                 ["Can I cancel or reschedule?", "Yes, you can cancel up to 2 hours before the session. Email us at hello@dillo.in with your booking ID."],
                 ["Is there a cost to book?", "The video shopping session is completely free. You only pay for sarees you choose to purchase."],
               ].map(([q, a]) => (
-                <details key={q} className="bg-white border border-gray-100 rounded-2xl p-5 group cursor-pointer">
+                <details key={q} className="bg-white border border-gray-100 rounded-sm p-5 group cursor-pointer">
                   <summary className="font-body font-semibold text-sm text-dillo-charcoal list-none flex justify-between items-center">
                     {q}
                     <span className="text-gray-400 group-open:rotate-180 transition-transform duration-200">▾</span>

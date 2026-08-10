@@ -89,10 +89,10 @@ export default function NewArrivalsPage() {
     setError('');
 
     Promise.all([
-      apiFetch(`/sarees/${toQuery({ page_size: 100, new: true, ordering: '-created_at' })}`),
-      apiFetch('/saree-categories/?page_size=100'),
+      apiFetch(`/products/${toQuery({ page_size: 100, new: true, ordering: '-created_at' })}`),
+      apiFetch('/product-categories/?page_size=100'),
       apiFetch('/occasion-categories/?page_size=100'),
-      apiFetch('/saree-type-options/?page_size=100&is_active=true'),
+      apiFetch('/product-type-options/?page_size=100&is_active=true'),
     ])
       .then(([productPayload, categoryPayload, occasionPayload, sareeTypePayload]) => {
         if (!mounted) return;

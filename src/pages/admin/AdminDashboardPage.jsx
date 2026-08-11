@@ -687,6 +687,26 @@ function ProductForm({
     }
   };
 
+  const moveToNextField = (e) => {
+    if (e.key !== 'Enter' || e.ctrlKey || e.metaKey) return;
+    const target = e.target;
+    if (target.tagName === 'TEXTAREA' || target.type === 'submit' || target.type === 'button') return;
+
+    const fields = Array.from(
+      e.currentTarget.querySelectorAll('input, select, textarea, button')
+    ).filter(el =>
+      !el.disabled &&
+      el.offsetParent !== null &&
+      el.type !== 'hidden' &&
+      el.type !== 'submit'
+    );
+    const index = fields.indexOf(target);
+    if (index >= 0 && index < fields.length - 1) {
+      e.preventDefault();
+      fields[index + 1].focus();
+    }
+  };
+
   const sections = [
     { id: 'basic',      label: 'Basic Info' },
     { id: 'pricing',    label: 'Pricing' },
@@ -741,7 +761,7 @@ function ProductForm({
         </div>
       )}
 
-      <form onSubmit={submit} className="p-5 space-y-8">
+      <form onSubmit={submit} onKeyDown={moveToNextField} className="p-5 space-y-8">
 
         {/* ── Basic Info ─────────────────────────────────────── */}
         <section id="section-basic" onFocus={() => setActiveSection('basic')}>
@@ -839,7 +859,7 @@ function ProductForm({
         {/* ── Pricing & Stock ──────────────────────────────────── */}
         <section id="section-pricing" onFocus={() => setActiveSection('pricing')}>
           <SectionHeading>Pricing & Stock</SectionHeading>
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
             <div>
               <FieldLabel required hint="MRP before discount">Original price (₹)</FieldLabel>
               <input className="input-field w-full" type="number" min="0" step="0.01" placeholder="4500.00"
@@ -2520,7 +2540,7 @@ function UsersAdmin() {
 }
 
 // ─── Overview ─────────────────────────────────────────────────────────────────
-function Overview({ onShowLowStock }) {
+function Overview({ onNavigate, onShowLowStock }) {
   const [summary, setSummary] = useState(null);
   useEffect(() => { apiFetch('/admin/dashboard/').then(setSummary).catch(console.error); }, []);
   if (!summary) return (
@@ -2532,10 +2552,18 @@ function Overview({ onShowLowStock }) {
   return (
     <div className="space-y-6">
       <div className="grid sm:grid-cols-2 xl:grid-cols-5 gap-4">
-        <Stat label="Products"  value={summary.totals.products} />
-        <Stat label="Users"     value={summary.totals.users} />
-        <Stat label="Orders"    value={summary.totals.orders} />
-        <Stat label="Revenue"   value={formatPrice(Number(summary.totals.revenue || 0))} />
+        <button type="button" onClick={() => onNavigate?.('products')} className="w-full text-left transition-transform hover:-translate-y-0.5 focus:outline-none">
+          <Stat label="Products"  value={summary.totals.products} />
+        </button>
+        <button type="button" onClick={() => onNavigate?.('users')} className="w-full text-left transition-transform hover:-translate-y-0.5 focus:outline-none">
+          <Stat label="Users"     value={summary.totals.users} />
+        </button>
+        <button type="button" onClick={() => onNavigate?.('orders')} className="w-full text-left transition-transform hover:-translate-y-0.5 focus:outline-none">
+          <Stat label="Orders"    value={summary.totals.orders} />
+        </button>
+        <button type="button" onClick={() => onNavigate?.('orders')} className="w-full text-left transition-transform hover:-translate-y-0.5 focus:outline-none">
+          <Stat label="Revenue"   value={formatPrice(Number(summary.totals.revenue || 0))} />
+        </button>
         <button
           type="button"
           onClick={onShowLowStock}
@@ -2676,7 +2704,7 @@ export default function AdminDashboardPage() {
           </h2>
         </div>
 
-        {activeTab === 'overview'    && <Overview onShowLowStock={showLowStockProducts} />}
+        {activeTab === 'overview'    && <Overview onNavigate={handleTabChange} onShowLowStock={showLowStockProducts} />}
         {activeTab === 'home-screen' && <HomeScreenAdmin />}
         {activeTab === 'products'    && (
           <ProductsAdmin

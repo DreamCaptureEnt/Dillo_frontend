@@ -66,6 +66,7 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled]       = useState(false);
   const [activeMenu, setActiveMenu]   = useState(null);
+  const [desktopMenuTop, setDesktopMenuTop] = useState(0);
   const [mobileSubmenu, setMobileSubmenu] = useState(null);
   const [productTypes, setProductTypes] = useState([]);
   const [occasions, setOccasions] = useState([]);
@@ -158,8 +159,13 @@ export default function Header() {
     }
   };
 
+  const openDesktopMenu = (label, event) => {
+    setActiveMenu(label);
+    setDesktopMenuTop(event.currentTarget.getBoundingClientRect().bottom);
+  };
+
   const navItems = useMemo(() => {
-    const occasionLinks = occasions.slice(0, 8).map(occasion => ({
+    const occasionLinks = occasions.slice(0, 5).map(occasion => ({
       label: occasion.name,
       value: occasion.slug || occasion.id || occasion.name,
       href: `/products?occasion=${encodeURIComponent(occasion.slug || occasion.id || occasion.name)}`,
@@ -208,7 +214,7 @@ export default function Header() {
         }),
       }));
       const categoryLinks = children.length
-        ? children.slice(0, 8).map(ch => ({
+        ? children.slice(0, 5).map(ch => ({
             label: ch.name,
             href: `/products?category=${encodeURIComponent(ch.name || ch.slug)}`,
           }))
@@ -217,7 +223,7 @@ export default function Header() {
       const shopLinks = [
         { label: 'New Arrivals', href: productsHref({ category: categoryValue, filter: 'new' }), badge: 'New' },
         { label: 'Best Sellers', href: productsHref({ category: categoryValue, filter: 'bestseller' }) },
-        { label: 'Trending Now', href: productsHref({ category: categoryValue, tag: 'trending-now' }) },
+        { label: 'Trending Now', href: productsHref({ category: categoryValue, filter: 'bestseller' }) },
       ];
 
       return [
@@ -277,7 +283,7 @@ export default function Header() {
       {
         label: 'Trending Now',
         labelTa: 'பிரபலமானவை',
-        href: '/products?tag=trending-now',
+        href: '/products?filter=bestseller',
       },
       {
         label: 'About Us',
@@ -431,11 +437,13 @@ export default function Header() {
 
             {/* left spacer — balances the icon cluster so col 2 is truly centered */}
             <nav className="flex flex-1 min-w-0 items-center justify-start xl:justify-center gap-0.5 overflow-visible pr-2">
-              {navItems.map((item) => (
+              {navItems.map((item) => {
+                const visibleGroups = item.submenu || [];
+                return (
                 <div
                   key={item.label}
                   className="relative py-2"
-                  onMouseEnter={() => setActiveMenu(item.label)}
+                  onMouseEnter={(event) => openDesktopMenu(item.label, event)}
                   onMouseLeave={() => setActiveMenu(null)}
                 >
                   <Link
@@ -463,19 +471,19 @@ export default function Header() {
 
                   {item.submenu && activeMenu === item.label && (
                     <div
-                      className="absolute left-1/2 top-full z-[110] w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 bg-white rounded-xl shadow-lg shadow-dillo-charcoal/10 border border-gray-100 ring-1 ring-black/[0.03] overflow-hidden"
+                      className="fixed left-1/2 z-[110] w-[min(680px,calc(100vw-2rem))] -translate-x-1/2 bg-white rounded-sm shadow-lg shadow-dillo-charcoal/10 border border-gray-100 ring-1 ring-black/[0.03] overflow-hidden"
+                      style={{ top: desktopMenuTop }}
                     >
                       <div className="h-[3px] bg-dillo-red" />
                       <div
-                        className="grid gap-x-6 gap-y-5 p-5"
-                        style={{ gridTemplateColumns: `repeat(${Math.min(item.submenu.length, 3)}, minmax(180px, 1fr))` }}
+                        className="grid grid-cols-2 xl:grid-cols-3 gap-x-5 gap-y-5 p-5"
                       >
-                        {item.submenu.map((group) => (
-                          <div key={group.heading} className="min-w-0">
+                        {visibleGroups.map((group) => (
+                          <div key={group.heading} className={`min-w-0 ${group.heading === 'Shop' ? 'hidden xl:block' : ''}`}>
                             <p className="text-[10.5px] font-cinzel font-semibold tracking-wider text-dillo-gold uppercase mb-1.5 pb-1.5 border-b border-gray-100">
                               {group.heading}
                             </p>
-                            <ul className="space-y-1 max-h-64 overflow-y-auto overflow-x-hidden pr-1.5 text-sm">
+                            <ul className="space-y-1 max-h-[190px] overflow-y-auto overflow-x-hidden pr-1.5 text-sm [scrollbar-width:thin] [scrollbar-color:#d4a017_#f3f4f6] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-dillo-gold [&::-webkit-scrollbar-thumb]:rounded-full">
                               {group.links.map((link) => (
                                 <li key={link.label}>
                                   <Link to={link.href}
@@ -498,7 +506,7 @@ export default function Header() {
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
             </nav>
 
             <div className="flex shrink-0 items-center gap-1.5 justify-end">

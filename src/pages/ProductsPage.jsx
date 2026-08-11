@@ -223,7 +223,7 @@ export const FilterPanel = memo(function FilterPanel({
   }, [categories, occasionOptions]);
 
   return (
-    <div className={`${isMobile ? '' : 'sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto'} bg-white border border-gray-100 rounded-sm p-5`}>
+    <div className={`${isMobile ? '' : 'lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#d4a017_#f3f4f6] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-dillo-gold [&::-webkit-scrollbar-thumb]:rounded-full'} bg-white border border-gray-100 rounded-sm p-5`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-display font-bold text-lg text-dillo-charcoal">Filters</h3>
         <div className="flex gap-2">
@@ -719,9 +719,9 @@ export default function ProductsPage() {
           </div>
         )}
 
-        <div className="flex gap-6 xl:gap-8">
+        <div className="flex items-start gap-6 xl:gap-8">
           {/* Desktop sidebar */}
-          <div className="hidden lg:block w-72 flex-shrink-0">
+          <div className="hidden lg:block sticky top-36 2xl:top-40 w-72 flex-shrink-0 self-start">
             <FilterPanel
               filters={filters}
               setFilters={applyFilters}

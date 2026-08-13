@@ -808,6 +808,16 @@ header.sticky {
   white-space: nowrap;
 }
 
+.admin-pricing-grid > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-pricing-grid > div > .mb-1\.5:first-child {
+  min-height: 38px;
+  align-items: flex-start;
+}
+
 /* ── Preloader ──────────────────────────────────────── */
 .preloader-logo-wrap {
   position: relative;

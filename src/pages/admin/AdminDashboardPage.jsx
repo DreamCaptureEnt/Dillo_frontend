@@ -859,7 +859,7 @@ function ProductForm({
         {/* ── Pricing & Stock ──────────────────────────────────── */}
         <section id="section-pricing" onFocus={() => setActiveSection('pricing')}>
           <SectionHeading>Pricing & Stock</SectionHeading>
-          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+          <div className="admin-pricing-grid grid sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
             <div>
               <FieldLabel required hint="MRP before discount">Original price (₹)</FieldLabel>
               <input className="input-field w-full" type="number" min="0" step="0.01" placeholder="4500.00"

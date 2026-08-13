@@ -15,6 +15,11 @@ import { LogoLoader } from '../components/Preloader';
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&q=80';
 
+// Sticky offset for the image panel — reads the header's real rendered height
+// published by Header.jsx as --header-offset, so this never sits behind (or
+// too far below) the header at any breakpoint or scroll state.
+const STICKY_TOP = 'calc(var(--header-offset, 160px) + 16px)';
+
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 function getResults(payload) {
   if (Array.isArray(payload)) return payload;
@@ -992,8 +997,13 @@ export default function ProductDetailPage() {
       <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
         <div className="grid lg:grid-cols-[minmax(320px,560px)_minmax(0,1fr)] gap-6 lg:gap-10 xl:gap-14 items-start">
 
-          {/* Sticky image panel */}
-          <div className="lg:sticky lg:top-40 lg:self-start">
+          {/* Sticky image panel — offset tracks the header's real height via
+              --header-offset (see Header.jsx), so it never sits behind the
+              header or drifts too far below it at any breakpoint/scroll state. */}
+          <div
+            className="lg:sticky lg:self-start"
+            style={{ top: STICKY_TOP }}
+          >
             <ImageViewer images={product.images} video={product.video} />
           </div>
 
@@ -1014,4 +1024,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-

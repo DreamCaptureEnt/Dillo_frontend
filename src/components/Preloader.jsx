@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import DilloVideo from '../assets/Dillo_v02.mp4';
+import DilloVideo from '../assets/LOGO_GIF.mp4';
 
 const loaderSizes = {
   sm: { mark: 86, logo: 66, progress: 84 },
@@ -48,13 +48,13 @@ export default function Preloader({ onDone }) {
   const doneRef = useRef(false);
 
   useEffect(() => {
-    const hideTimer = setTimeout(() => setHiding(true), 8200);
+    const hideTimer = setTimeout(() => setHiding(true), 10000);
     const doneTimer = setTimeout(() => {
       if (!doneRef.current) {
         doneRef.current = true;
         onDone();
       }
-    }, 8900);
+    }, 10000);
     return () => {
       clearTimeout(hideTimer);
       clearTimeout(doneTimer);

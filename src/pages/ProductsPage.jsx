@@ -17,6 +17,17 @@ import {
 const DEFAULT_MAX_PRICE = 100000;
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&q=80';
 
+// ── Sticky-offset helper ────────────────────────────────────────────────────
+// The header's height/position changes with breakpoint, scroll state, and
+// interaction state (search bar, mobile drawer). Header.jsx measures its own
+// real rendered height and publishes it as `--header-offset` on the document
+// root. Every sticky element on the page reads that variable instead of a
+// guessed `top-36`/`top-40` Tailwind value, so it never ends up covered by
+// (or awkwardly far below) the header in some breakpoint/scroll combination.
+const PRODUCT_BAR_TOP = 'var(--header-offset, 160px)';
+const FILTER_TOP = 'calc(var(--header-offset, 160px) + 56px)';
+const FILTER_MAXH = 'calc(100dvh - var(--header-offset, 160px) - 80px)';
+
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
 
 const norm = (v) => (v || '').toString().toLowerCase().trim();
@@ -223,7 +234,9 @@ export const FilterPanel = memo(function FilterPanel({
   }, [categories, occasionOptions]);
 
   return (
-    <div className={`${isMobile ? '' : 'lg:max-h-[calc(100dvh-10rem)] lg:overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#d4a017_#f3f4f6] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-dillo-gold [&::-webkit-scrollbar-thumb]:rounded-full'} bg-white border border-gray-100 rounded-sm p-5`}>
+    <div
+      className={`${isMobile ? '' : 'lg:h-full lg:min-h-0 lg:overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#d4a017_#f3f4f6] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-dillo-gold [&::-webkit-scrollbar-thumb]:rounded-full'} bg-white border border-gray-100 rounded-sm p-5`}
+    >
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-display font-bold text-lg text-dillo-charcoal">Filters</h3>
         <div className="flex gap-2">
@@ -698,8 +711,12 @@ export default function ProductsPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-dillo-ivory">
+      <section>
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-100">
+      <div
+        className="lg:sticky lg:z-30 bg-white border-b border-gray-100 shadow-sm shadow-dillo-charcoal/5"
+        style={{ top: PRODUCT_BAR_TOP }}
+      >
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
           <nav className="text-xs font-body text-gray-500 flex items-center gap-2">
             <Link to="/" className="hover:text-dillo-red">Home</Link>
@@ -712,7 +729,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
         {error && (
           <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 mb-6 font-body text-sm">
             {error}
@@ -720,8 +737,13 @@ export default function ProductsPage() {
         )}
 
         <div className="flex items-start gap-6 xl:gap-8">
-          {/* Desktop sidebar */}
-          <div className="hidden lg:block sticky top-36 2xl:top-40 w-72 flex-shrink-0 self-start">
+          {/* Desktop sidebar — sticky offset tracks the header's real height
+              via --header-offset (see Header.jsx), so it never sits behind
+              the header or floats too far down at any breakpoint/scroll state. */}
+          <div
+            className="hidden lg:block sticky w-72 flex-shrink-0 self-start"
+            style={{ top: FILTER_TOP, height: FILTER_MAXH }}
+          >
             <FilterPanel
               filters={filters}
               setFilters={applyFilters}
@@ -778,8 +800,9 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Results */}
-            {loading ? (
+            <div>
+              {/* Results */}
+              {loading ? (
               <div className="bg-white border border-gray-100 rounded-sm p-10 sm:p-12">
                 <LogoLoader size="md" label="Loading products..." />
               </div>
@@ -795,17 +818,19 @@ export default function ProductsPage() {
                 </button>
               </div>
             ) : view === 'grid' ? (
-              <div className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 xl:gap-6">
+              <div className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 xl:gap-6 pb-8">
                 {filtered.map(p => <ProductCard key={p.id} product={p} view="grid" />)}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 pb-8">
                 {filtered.map(p => <ProductCard key={p.id} product={p} view="list" />)}
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
+      </section>
 
       {/* Mobile filter drawer */}
       {mobileFiltersOpen && (

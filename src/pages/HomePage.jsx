@@ -332,26 +332,14 @@ function HeroBanner() {
 }
 
 function DynamicHeroBanner() {
-  const fallbackSlides = [
-    { landscapeUrl: HeroImage1, portraitUrl: HeroImage1, captionLabel: 'Kanjivaram Silk', captionSubtitle: 'Pure zari weave' },
-    { landscapeUrl: HeroImage2, portraitUrl: HeroImage2, captionLabel: 'Banarasi Silk', captionSubtitle: 'Royal brocade' },
-    { landscapeUrl: HeroImage3, portraitUrl: HeroImage3, captionLabel: 'Mysore Silk', captionSubtitle: 'Soft and lustrous' },
-    { landscapeUrl: HeroImage4, portraitUrl: HeroImage4, captionLabel: 'Dharmavaram', captionSubtitle: 'Temple border' },
-    { landscapeUrl: HeroImage5, portraitUrl: HeroImage5, captionLabel: 'Tussar Silk', captionSubtitle: 'Natural elegance' },
-    { landscapeUrl: HeroImage6, portraitUrl: HeroImage6, captionLabel: 'Organza', captionSubtitle: 'Sheer and graceful' },
-  ].map((item, i) => ({
-    ...(bannerSlides[i % bannerSlides.length] || {}),
-    id: `fallback-${i}`,
-    ctaUrl: '/products',
-    ...item,
-  }));
-  const [slides, setSlides] = useState(fallbackSlides);
+  const [slides, setSlides] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(0);
   const [mobileActive, setMobileActive] = useState(0);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
   const count = Math.max(slides.length, 1);
-  const slide = slides[active] || fallbackSlides[0];
+  const slide = slides[active] || null;
   const mobileSlide = slides[mobileActive] || slide;
 
   const goToSlide = (index) => setActive((index + count) % count);
@@ -385,21 +373,31 @@ function DynamicHeroBanner() {
           setSlides(rows);
           setActive(0);
           setMobileActive(0);
+        } else {
+          setSlides([]);
         }
       })
-      .catch(err => console.error('Could not load home screen images', err));
+      .catch(err => {
+        console.error('Could not load home screen images', err);
+        if (mounted) setSlides([]);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
     return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
+    if (slides.length <= 1) return undefined;
     const timer = setInterval(() => setActive(value => (value + 1) % count), 4200);
     return () => clearInterval(timer);
-  }, [count]);
+  }, [count, slides.length]);
 
   useEffect(() => {
+    if (slides.length <= 1) return undefined;
     const timer = setInterval(() => setMobileActive(value => (value + 1) % count), 3000);
     return () => clearInterval(timer);
-  }, [count]);
+  }, [count, slides.length]);
 
   const handleTouchStart = (event) => {
     const touch = event.touches[0];
@@ -418,6 +416,16 @@ function DynamicHeroBanner() {
     if (isMobile) goToMobile(mobileActive + (deltaX < 0 ? 1 : -1));
     else goToSlide(active + (deltaX < 0 ? 1 : -1));
   };
+
+  if (loading) {
+    return (
+      <div className="hero-banner relative overflow-hidden bg-dillo-charcoal flex items-center justify-center">
+        <LogoLoader size="md" label="Loading home screen..." />
+      </div>
+    );
+  }
+
+  if (!slide) return null;
 
   return (
     <div className="hero-banner relative overflow-hidden bg-dillo-charcoal">

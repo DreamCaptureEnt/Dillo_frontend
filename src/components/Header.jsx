@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   ShoppingCart, Heart, Search, Menu, X, ChevronDown,
@@ -38,25 +38,23 @@ function SocialBrandIcon({ platform, size = 14 }) {
     Row 1 (h-16 xl:h-20 2xl:h-24): logo only, perfectly centered, full breathing room
     Row 2 (h-12, xl+ only): nav (truly centered) + icons (right-aligned), own row
 
-  ROW 2 CENTERING FIX (this version):
-  Previously Row 2 was `flex justify-between` with the nav as
-  `flex-1 justify-center` and the icon cluster as `flex-shrink-0`.
-  That centers the nav *inside the leftover space after the icons*,
-  not inside the row as a whole — so on real screens the nav visibly
-  drifts left, since the icon cluster on the right (~180px) has no
-  mirrored space on the left to balance it.
+  ── HEADER-OFFSET SYSTEM ──────────────────────────────────────────────────
+  The header's real rendered height is NOT constant: it changes with
+  breakpoint (h-16 → lg:h-20 → 2xl:h-24, plus the lg-only nav row),
+  scroll state (top-8/top-[72px] before scroll vs top-0 after), and
+  transient UI (the inline search bar adds a row when opened).
 
-  Fix: use the same trick as the logo row — a 3-column grid
-  `[1fr_auto_1fr]` with an empty first column, the nav in the middle
-  column (auto width, centered), and the icon cluster in the last
-  column (right-aligned). Because the two flanking columns are true
-  grid tracks (1fr each), the middle column is mathematically centered
-  in the row regardless of how wide the icon cluster is — the same
-  guarantee the logo row already relies on.
+  Any page that wants to stick something below the header (filter
+  sidebars, sticky product image panels, etc.) needs to know the
+  header's *actual* bottom edge at all times — not a guessed Tailwind
+  top-* value that only happens to be correct in one specific state.
 
-  Header total heights:
-    mobile  → logo row h-16 (no separate nav row; nav lives in drawer)
-    xl+     → logo row h-20 xl:h-24  +  nav row h-12
+  So we measure it here with ResizeObserver + a scroll/resize listener,
+  and publish it as the CSS custom property --header-offset on the
+  document root. Every other component then reads
+  `calc(var(--header-offset, <fallback>) + <gap>)` instead of hardcoding
+  a top offset — self-correcting at any breakpoint or interaction state.
+  ──────────────────────────────────────────────────────────────────────────
 */
 
 export default function Header() {
@@ -66,7 +64,7 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled]       = useState(false);
   const [activeMenu, setActiveMenu]   = useState(null);
-  const [desktopMenuTop, setDesktopMenuTop] = useState(0);
+  const [desktopMenuStyle, setDesktopMenuStyle] = useState({ top: 0, left: 16, width: 680 });
   const [mobileSubmenu, setMobileSubmenu] = useState(null);
   const [productTypes, setProductTypes] = useState([]);
   const [occasions, setOccasions] = useState([]);
@@ -74,17 +72,46 @@ export default function Header() {
   const navigate  = useNavigate();
   const location  = useLocation();
   const searchRef = useRef(null);
+  const headerRef = useRef(null);
+  const menuCloseTimerRef = useRef(null);
 
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 60);
+    const handler = () => {
+      setScrolled(window.scrollY > 60);
+      setActiveMenu(null);
+      if (menuCloseTimerRef.current) {
+        clearTimeout(menuCloseTimerRef.current);
+        menuCloseTimerRef.current = null;
+      }
+    };
     window.addEventListener('scroll', handler);
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
   useEffect(() => {
+    const closeOnOutsideClick = (event) => {
+      if (!activeMenu) return;
+      if (headerRef.current?.contains(event.target)) return;
+      setActiveMenu(null);
+      if (menuCloseTimerRef.current) {
+        clearTimeout(menuCloseTimerRef.current);
+        menuCloseTimerRef.current = null;
+      }
+    };
+
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('touchstart', closeOnOutsideClick, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('touchstart', closeOnOutsideClick);
+    };
+  }, [activeMenu]);
+
+  useEffect(() => {
     setMobileOpen(false);
     setActiveMenu(null);
     setMobileSubmenu(null);
+    if (menuCloseTimerRef.current) clearTimeout(menuCloseTimerRef.current);
   }, [location]);
 
   useEffect(() => {
@@ -95,6 +122,40 @@ export default function Header() {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
+
+  // ── Keep --header-offset in sync with the header's real rendered bottom
+  // edge. Fires on: scroll (top-8 → top-0 jump), resize (breakpoint changes
+  // affect row heights), and any DOM size change on the header itself
+  // (search bar toggling, mobile drawer opening, submenu heights, etc.)
+  useLayoutEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    let frame = null;
+    const updateOffset = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        const bottom = header.getBoundingClientRect().bottom;
+        document.documentElement.style.setProperty('--header-offset', `${Math.max(bottom, 0)}px`);
+      });
+    };
+
+    updateOffset();
+
+    const resizeObserver = new ResizeObserver(updateOffset);
+    resizeObserver.observe(header);
+
+    window.addEventListener('scroll', updateOffset, { passive: true });
+    window.addEventListener('resize', updateOffset);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('scroll', updateOffset);
+      window.removeEventListener('resize', updateOffset);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -159,9 +220,33 @@ export default function Header() {
     }
   };
 
+  const cancelMenuClose = () => {
+    if (menuCloseTimerRef.current) {
+      clearTimeout(menuCloseTimerRef.current);
+      menuCloseTimerRef.current = null;
+    }
+  };
+
+  const scheduleMenuClose = () => {
+    cancelMenuClose();
+    menuCloseTimerRef.current = setTimeout(() => {
+      setActiveMenu(null);
+      menuCloseTimerRef.current = null;
+    }, 3000);
+  };
+
   const openDesktopMenu = (label, event) => {
+    cancelMenuClose();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const width = Math.min(680, window.innerWidth - 32);
+    const preferredLeft = rect.left + (rect.width / 2) - (width / 2);
+    const left = Math.min(Math.max(preferredLeft, 16), window.innerWidth - width - 16);
     setActiveMenu(label);
-    setDesktopMenuTop(event.currentTarget.getBoundingClientRect().bottom);
+    setDesktopMenuStyle({
+      top: rect.bottom,
+      left,
+      width,
+    });
   };
 
   const navItems = useMemo(() => {
@@ -340,10 +425,11 @@ export default function Header() {
 
       {/* ── Main Header ─────────────────────────────────────── */}
       <header
+        ref={headerRef}
         className={`fixed left-0 right-0 z-[50] transition-all duration-300 ${scrolled ? 'top-0' : 'top-8 md:top-[72px]'}
           ${scrolled ? 'glassmorphism shadow-lg shadow-dillo-charcoal/10' : 'bg-white'}
           border-b border-gray-100`}
-        onMouseLeave={() => setActiveMenu(null)}
+        onMouseLeave={scheduleMenuClose}
       >
         <div className="max-w-7xl mx-auto px-4 relative">
 
@@ -444,7 +530,7 @@ export default function Header() {
                   key={item.label}
                   className="relative py-2"
                   onMouseEnter={(event) => openDesktopMenu(item.label, event)}
-                  onMouseLeave={() => setActiveMenu(null)}
+                  onMouseLeave={scheduleMenuClose}
                 >
                   <Link
                     to={item.href}
@@ -471,8 +557,10 @@ export default function Header() {
 
                   {item.submenu && activeMenu === item.label && (
                     <div
-                      className="fixed left-1/2 z-[110] w-[min(680px,calc(100vw-2rem))] -translate-x-1/2 bg-white rounded-sm shadow-lg shadow-dillo-charcoal/10 border border-gray-100 ring-1 ring-black/[0.03] overflow-hidden"
-                      style={{ top: desktopMenuTop }}
+                      className="fixed z-[110] bg-white rounded-sm shadow-lg shadow-dillo-charcoal/10 border border-gray-100 ring-1 ring-black/[0.03] overflow-hidden"
+                      style={desktopMenuStyle}
+                      onMouseEnter={cancelMenuClose}
+                      onMouseLeave={scheduleMenuClose}
                     >
                       <div className="h-[3px] bg-dillo-red" />
                       <div

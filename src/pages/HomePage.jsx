@@ -4,7 +4,6 @@ import {
   ChevronLeft, ChevronRight, ArrowRight, Play, Sparkles, Shield, RefreshCw, Truck, Star
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { LogoLoader } from '../components/Preloader';
 import { apiFetch, toQuery } from '../api';
 import { bannerSlides, formatPrice } from '../products.js';
 import HeroImage1 from '../assets/Image1.jpg';
@@ -418,11 +417,7 @@ function DynamicHeroBanner() {
   };
 
   if (loading) {
-    return (
-      <div className="hero-banner relative overflow-hidden bg-dillo-charcoal flex items-center justify-center">
-        <LogoLoader size="md" label="Loading home screen..." />
-      </div>
-    );
+    return null;
   }
 
   if (!slide) return null;
@@ -584,7 +579,7 @@ function ProductGridFallback({ loading, emptyText }) {
   return (
     <div className="col-span-full bg-white/70 border border-gray-100 p-10 text-center">
       {loading ? (
-        <LogoLoader size="sm" label="Loading products..." />
+        <p className="font-body text-sm text-gray-400">Loading products...</p>
       ) : (
         <p className="font-body text-sm text-gray-400">{emptyText}</p>
       )}
@@ -691,7 +686,7 @@ function BestsellerBanner({ products, loading }) {
           ) : (
             <div className="col-span-full bg-white/5 border border-white/10 p-10 text-center">
               {loading ? (
-                <LogoLoader size="sm" label="Loading best sellers..." />
+                <p className="font-body text-sm text-white/50">Loading best sellers...</p>
               ) : (
                 <p className="font-body text-sm text-white/50">No best sellers yet. Mark products as Bestseller in admin.</p>
               )}

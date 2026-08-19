@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import DilloVideo from '../assets/LOGO_GIF.mp4';
+import DilloVideo from '../assets/Dillo_Logo.mp4';
 
 const loaderSizes = {
   sm: { mark: 86, logo: 66, progress: 84 },
@@ -13,7 +13,14 @@ export function LogoLoader({ size = 'md', label = 'Loading...', className = '' }
   const [loaded, setLoaded] = useState(false);
 
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`}>
+    <div
+      className={`bg-white flex flex-col items-center justify-center ${className}`}
+      style={{
+        '--loader-mark-size': `${dims.mark}px`,
+        '--loader-logo-size': `${dims.logo}px`,
+        '--loader-progress-width': `${dims.progress}px`,
+      }}
+    >
       <div className="preloader-mark" aria-label={label}>
         <div className="preloader-logo-wrap">
           <video
@@ -25,15 +32,10 @@ export function LogoLoader({ size = 'md', label = 'Loading...', className = '' }
             playsInline
             preload="auto"
             onLoadedData={() => setLoaded(true)}
-            style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
           />
         </div>
       </div>
-      <div
-        className="preloader-progress"
-        aria-hidden="true"
-        style={{ '--loader-progress-width': `${dims.progress}px` }}
-      >
+      <div className="preloader-progress" aria-hidden="true">
         <span />
       </div>
       {label && (
@@ -70,12 +72,12 @@ export default function Preloader({ onDone }) {
 
   return (
     <div
+      className="preloader-screen"
       onTransitionEnd={handleTransitionEnd}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        backgroundColor: '#f8f6f0',   /* was #ffffff — now matches the video bg */
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

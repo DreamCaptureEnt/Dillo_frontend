@@ -818,6 +818,10 @@ header.sticky {
   align-items: flex-start;
 }
 
+.preloader-screen {
+  background: #ffffff;
+}
+
 /* ── Preloader ──────────────────────────────────────── */
 .preloader-logo-wrap {
   position: relative;
@@ -826,16 +830,18 @@ header.sticky {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f6f0;
-  border-radius: 12px;
-  overflow: hidden;        /* clips anything outside this box */
+  width: var(--loader-logo-size, clamp(145px, 28vw, 230px));
+  aspect-ratio: 1;
+  background: #ffffff;
+  overflow: visible;
 }
 
 .preloader-logo {
   width: var(--loader-logo-size, clamp(145px, 28vw, 230px));
-  height: auto;
+  height: var(--loader-logo-size, clamp(145px, 28vw, 230px));
+  object-fit: contain;
   display: block;
-  transform: scale(1.05) translateX(2%);  /* nudges the video to hide the left-edge line */
+  transform: scale(1.22);
   mix-blend-mode: normal;
   opacity: 0;
   transition: opacity 0.35s ease;
